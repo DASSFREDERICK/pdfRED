@@ -3,37 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>pdfRED</title>
+<title>pdfRED — document processing console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#ffffff;
-    --grid:#e7e9ec;
-    --panel:#fafbfc;
-    --panel-border:#dde1e7;
-    --ink:#11151c;
-    --ink-soft:#5b6474;
-    --ink-faint:#8b93a1;
-    --blue:#1b3b6f;
+    --paper:#faf8f4;
+    --grid:#e7e2d8;
+    --panel:#fdfcfa;
+    --panel-2:#f2efe7;
+    --panel-border:#d9d2c3;
+    --hairline:#e3ddd0;
+    --ink:#1b1a16;
+    --ink-soft:#5c574c;
+    --ink-faint:#928c7c;
+    --blue:#1e4d8c;      --blue-wash:#e9f0f9;
     --blue-bright:#2f6fe4;
-    --blue-wash:#eef2fb;
-    --red:#c4102f;
-    --red-bright:#e0384f;
-    --red-wash:#fbe9eb;
-    --teal:#0f766e;
-    --teal-wash:#e6f5f3;
-    --amber:#a15c00;
-    --amber-wash:#fdf1e0;
-    --purple:#5b3aa0;
-    --purple-wash:#efe9fb;
-    --danger:#b4562c;
-    --danger-wash:#fbeee5;
-    --ok:#1f8f6d;
-    --sans:'Space Grotesk', sans-serif;
-    --mono:'IBM Plex Mono', monospace;
-    --radius:2px;
+    --red:#b23a2c;       --red-wash:#f8e9e6;
+    --teal:#12756a;      --teal-wash:#e5f2ef;
+    --amber:#95610a;     --amber-wash:#faf0dd;
+    --purple:#5b3e91;    --purple-wash:#eee8f8;
+    --danger:#96461f;    --danger-wash:#f7ece2;
+    --ok:#1a7a56;
+    --sans:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --maxw:1500px;
+    --pad-x:40px;
+    --ease:cubic-bezier(.22,.8,.3,1);
+  }
+
+  [data-theme="dark"]{
+    --paper:#14130f;
+    --grid:#221f18;
+    --panel:#1a1812;
+    --panel-2:#221f18;
+    --panel-border:#33301f;
+    --hairline:#2a2719;
+    --ink:#f2ede0;
+    --ink-soft:#b3ab96;
+    --ink-faint:#79725f;
+    --blue-wash:#1a2740;
+    --red-wash:#3a231c;
+    --teal-wash:#132c26;
+    --amber-wash:#332409;
+    --purple-wash:#2a2140;
+    --danger-wash:#33220f;
   }
 
   *{box-sizing:border-box;}
@@ -41,622 +56,1322 @@
   body{
     margin:0;
     font-family:var(--sans);
+    font-size:16px;
+    line-height:1.55;
     color:var(--ink);
     background:var(--paper);
     -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    transition:background .2s var(--ease), color .2s var(--ease);
+    zoom:1.15; /* renders at what used to need a manual 120% browser zoom */
   }
+  @media (max-width:820px){ body{ zoom:1; } }
+  ::selection{background:var(--red-wash); color:var(--red);}
 
-  /* ---------- page frame : the whole document reads as one drawing sheet ---------- */
+  /* ---------- drawing sheet ---------- */
   .sheet{
     position:relative;
-    max-width:1180px;
+    max-width:var(--maxw);
     margin:0 auto;
+    border-left:1px solid var(--hairline);
+    border-right:1px solid var(--hairline);
     background:
-      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/32px 32px,
-      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/32px 32px;
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/36px 36px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/36px 36px;
     background-attachment:local;
   }
-  .sheet::before,
-  .sheet::after{
-    content:"";
-    position:fixed;
-    top:18px; bottom:18px;
-    width:22px;
-    pointer-events:none;
-    z-index:5;
-  }
-  .crop{position:fixed; width:14px; height:14px; pointer-events:none; z-index:6;}
-  .crop::before,.crop::after{content:"";position:absolute;background:var(--ink);}
-  .crop::before{width:14px;height:1px;top:7px;left:0;}
-  .crop::after{width:1px;height:14px;left:7px;top:0;}
-  .crop.tl{top:14px;left:14px;}
-  .crop.tr{top:14px;right:14px;}
-  .crop.bl{bottom:14px;left:14px;}
-  .crop.br{bottom:14px;right:14px;}
+  .crop{position:fixed; width:16px; height:16px; pointer-events:none; z-index:8; opacity:.65;}
+  .crop::before,.crop::after{content:""; position:absolute; background:var(--ink);}
+  .crop::before{width:16px; height:1px; top:8px; left:0;}
+  .crop::after{width:1px; height:16px; left:8px; top:0;}
+  .crop.tl{top:16px;left:16px;} .crop.tr{top:16px;right:16px;}
+  .crop.bl{bottom:16px;left:16px;} .crop.br{bottom:16px;right:16px;}
 
   a{color:inherit;}
+  h1,h2,h3{text-wrap:balance;}
 
-  /* ---------- header / title block ---------- */
+  /* ---------- header ---------- */
   header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:22px 40px;
+    display:flex; align-items:center; justify-content:space-between; gap:24px;
+    padding:20px var(--pad-x);
     border-bottom:1px solid var(--panel-border);
-    background:rgba(255,255,255,.9);
-    backdrop-filter:blur(6px);
-    position:sticky;
-    top:0;
-    z-index:4;
+    background:var(--paper);
+    opacity:.97;
+    backdrop-filter:blur(10px);
+    position:sticky; top:0; z-index:6;
   }
-  .brand{display:flex; align-items:center; gap:12px;}
-  .brand svg{display:block;}
-  .brand-name{font-weight:600; font-size:17px; letter-spacing:.2px;}
-  .brand-pdf{color:var(--ink);}
-  .brand-accent{color:var(--red);}
-  .brand-sub{font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-top:1px;}
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand svg{display:block; color:var(--ink);}
+  .brand-name{font-weight:600; font-size:19px; letter-spacing:.2px; line-height:1.2;}
+  .brand-pdf{color:var(--ink);} .brand-accent{color:var(--red);}
+  .brand-sub{font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-top:3px; letter-spacing:.01em;}
+  .head-right{display:flex; align-items:center; gap:10px;}
+  .engine{
+    font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);
+    display:flex; align-items:center; gap:7px; padding:0 12px;
+  }
+  .engine i{width:6px; height:6px; border-radius:50%; background:var(--ink-faint); display:block;}
+  .engine.live i{background:var(--ok); box-shadow:0 0 0 0 rgba(26,122,86,.45); animation:pulse 2.6s var(--ease) infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(26,122,86,.4);} 70%{box-shadow:0 0 0 7px rgba(26,122,86,0);} 100%{box-shadow:0 0 0 0 rgba(26,122,86,0);}}
+
+  .docs-link, .theme-toggle{
+    font-family:var(--mono); font-size:12px; color:var(--blue); text-decoration:none;
+    border:1px solid var(--panel-border); padding:8px 14px; background:var(--paper); cursor:pointer;
+    transition:border-color .18s var(--ease), color .18s var(--ease), background .18s var(--ease);
+  }
+  .docs-link:hover, .theme-toggle:hover{border-color:var(--blue-bright); color:var(--blue-bright); background:var(--blue-wash);}
+  .theme-toggle{color:var(--ink-soft); display:flex; align-items:center; gap:7px;}
+  .theme-toggle .dot{width:6px; height:6px; border-radius:50%; background:currentColor; display:block;}
 
   /* ---------- hero ---------- */
   .hero{
-    display:grid;
-    grid-template-columns:1.1fr .9fr;
-    gap:48px;
-    align-items:center;
-    padding:76px 40px 84px;
+    display:grid; grid-template-columns:1.15fr .85fr; gap:56px; align-items:center;
+    padding:88px var(--pad-x) 92px;
     border-bottom:1px solid var(--panel-border);
   }
+  .hero-eyebrow{
+    font-family:var(--mono); font-size:12px; color:var(--red); margin:0 0 18px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .hero-eyebrow::before{content:""; width:16px; height:1px; background:var(--red); display:block;}
   .hero h1{
-    font-size:44px;
-    line-height:1.12;
-    font-weight:600;
-    letter-spacing:-.01em;
-    margin:0 0 20px;
-    max-width:15ch;
+    font-size:clamp(36px, 4vw, 54px);
+    line-height:1.08; font-weight:600; letter-spacing:-.02em;
+    margin:0 0 18px; max-width:16ch;
   }
-  .hero p{
-    font-size:16px;
-    line-height:1.6;
-    color:var(--ink-soft);
-    max-width:46ch;
-    margin:0 0 28px;
-  }
-  .spec-line{
-    display:flex;
-    gap:0;
-    font-family:var(--mono);
-    font-size:12.5px;
-    color:var(--ink-soft);
-  }
-  .spec-line span{padding:0 18px; position:relative;}
-  .spec-line span:first-child{padding-left:0;}
-  .spec-line span+span::before{
-    content:"";
-    position:absolute; left:0; top:2px; bottom:2px;
-    width:1px; background:var(--panel-border);
-  }
+  .hero-lead{font-size:16.5px; line-height:1.55; color:var(--ink-soft); max-width:46ch; margin:0 0 28px;}
 
-  .rig{
-    position:relative;
-    height:340px;
-    display:flex; align-items:center; justify-content:center;
+  /* -- hero command prompt -- */
+  .hero-prompt{position:relative; max-width:520px; margin-bottom:26px;}
+  .prompt-box{
+    display:flex; align-items:center; gap:12px;
+    border:1px solid var(--panel-border); background:var(--panel);
+    padding:16px 18px; transition:border-color .18s var(--ease), box-shadow .18s var(--ease);
   }
+  .prompt-box svg{flex:none; color:var(--ink-faint); transition:color .18s var(--ease);}
+  .prompt-box:focus-within{border-color:var(--red); box-shadow:0 0 0 3px color-mix(in srgb, var(--red) 12%, transparent);}
+  .prompt-box:focus-within svg{color:var(--red);}
+  #heroSearch{
+    flex:1; min-width:0; border:none; background:none; outline:none;
+    font-family:var(--sans); font-size:16px; color:var(--ink);
+  }
+  #heroSearch::placeholder{color:var(--ink-faint);}
+  .prompt-hint{font-family:var(--mono); font-size:11px; color:var(--ink-faint); border:1px solid var(--panel-border); padding:3px 7px; flex:none;}
+
+  .hero-suggest{
+    display:none; position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:4;
+    background:var(--panel); border:1px solid var(--panel-border);
+    box-shadow:0 14px 32px rgba(20,17,10,.14);
+    max-height:340px; overflow:auto;
+  }
+  .hero-suggest.show{display:block;}
+  .hero-suggest .sug{
+    display:flex; align-items:baseline; gap:10px; width:100%; text-align:left;
+    border:none; background:none; cursor:pointer;
+    padding:12px 16px; border-bottom:1px solid var(--hairline);
+    font-family:var(--sans); color:var(--ink); transition:background .12s var(--ease);
+  }
+  .hero-suggest .sug:last-child{border-bottom:none;}
+  .hero-suggest .sug:hover, .hero-suggest .sug.active{background:var(--panel-2);}
+  .hero-suggest .sug .sug-tag{font-family:var(--mono); font-size:10.5px; color:var(--accent, var(--red)); background:var(--wash, var(--red-wash)); padding:3px 7px; flex:none;}
+  .hero-suggest .sug .sug-title{font-weight:600; font-size:14px; flex:none;}
+  .hero-suggest .sug .sug-desc{font-size:12.5px; color:var(--ink-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .hero-suggest .sug-empty{padding:16px; font-family:var(--mono); font-size:12.5px; color:var(--ink-faint);}
+
+  .spec-line{display:flex; flex-wrap:wrap; font-family:var(--mono); font-size:13px; color:var(--ink-soft);}
+  .spec-line span{padding:0 20px; position:relative;}
+  .spec-line span:first-child{padding-left:0;}
+  .spec-line span+span::before{content:""; position:absolute; left:0; top:3px; bottom:3px; width:1px; background:var(--panel-border);}
+
+  .rig{position:relative; height:380px; display:flex; align-items:center; justify-content:center;}
   .rig svg{overflow:visible;}
-  .mark{transform-origin:center; animation:settle .9s cubic-bezier(.2,.9,.25,1) both;}
-  .mark.tl{animation-delay:.05s;}
-  .mark.tr{animation-delay:.15s;}
-  .mark.bl{animation-delay:.25s;}
-  .mark.br{animation-delay:.35s;}
-  .mark.tl{--dx:-16px; --dy:-12px; --dr:-10deg;}
-  .mark.tr{--dx:16px; --dy:-12px; --dr:10deg;}
-  .mark.bl{--dx:-16px; --dy:12px; --dr:10deg;}
-  .mark.br{--dx:16px; --dy:12px; --dr:-10deg;}
+  .mark{transform-origin:center; animation:settle 1s var(--ease) both;}
+  .mark.tl{animation-delay:.05s; --dx:-18px; --dy:-14px; --dr:-10deg;}
+  .mark.tr{animation-delay:.15s; --dx:18px; --dy:-14px; --dr:10deg;}
+  .mark.bl{animation-delay:.25s; --dx:-18px; --dy:14px; --dr:10deg;}
+  .mark.br{animation-delay:.35s; --dx:18px; --dy:14px; --dr:-10deg;}
   @keyframes settle{
     0%{transform:translate(var(--dx),var(--dy)) rotate(var(--dr)); opacity:0;}
-    40%{opacity:1;}
-    100%{transform:translate(0,0) rotate(0deg); opacity:1;}
+    45%{opacity:1;}
+    100%{transform:translate(0,0) rotate(0); opacity:1;}
   }
-  .page-outline{
-    stroke-dasharray:900;
-    stroke-dashoffset:900;
-    animation:draw 1.1s ease-out .1s forwards;
-  }
+  .page-outline{stroke-dasharray:920; stroke-dashoffset:920; animation:draw 1.3s var(--ease) .1s forwards;}
   @keyframes draw{to{stroke-dashoffset:0;}}
-  .dot-confirm{
-    opacity:0;
-    animation:appear .4s ease-out .95s forwards;
-  }
+  .dot-confirm{opacity:0; animation:appear .5s var(--ease) 1.1s forwards;}
   @keyframes appear{to{opacity:1;}}
+  .scanbeam{opacity:.5; animation:scan 5.5s var(--ease) 1.4s infinite;}
+  @keyframes scan{0%{transform:translateY(0); opacity:0;} 12%{opacity:.55;} 88%{opacity:.55;} 100%{transform:translateY(238px); opacity:0;}}
 
-  /* ---------- operations section ---------- */
-  .ops-head{
-    padding:52px 40px 8px;
-    display:flex; align-items:baseline; justify-content:space-between;
-    gap:24px;
+  /* ---------- group nav + search ---------- */
+  .groupbar-outer{
+    position:sticky; top:73px; z-index:5;
+    display:flex; align-items:center; gap:16px;
+    border-bottom:1px solid var(--panel-border);
+    background:var(--paper);
+    opacity:.97;
+    backdrop-filter:blur(10px);
+    padding:0 var(--pad-x);
   }
-  .ops-head h2{font-size:22px; font-weight:600; margin:0;}
-  .ops-head .count{font-family:var(--mono); font-size:12px; color:var(--ink-faint);}
+  .groupbar{
+    display:flex; gap:4px; flex:1 1 auto; min-width:0;
+    overflow-x:auto; scrollbar-width:none;
+  }
+  .groupbar::-webkit-scrollbar{display:none;}
+  .groupbar button{
+    appearance:none; background:none; border:none; border-bottom:2px solid transparent;
+    font-family:var(--mono); font-size:13px; color:var(--ink-soft); white-space:nowrap;
+    padding:16px 18px; cursor:pointer;
+    transition:color .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease);
+  }
+  .groupbar button:first-child{margin-left:-18px;}
+  .groupbar button:hover{color:var(--ink); background:var(--panel-2);}
+  .groupbar button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--red);}
+  .groupbar button b{color:var(--ink-faint); font-weight:400; margin-left:7px;}
+  .groupbar button:focus-visible{outline:2px solid var(--blue-bright); outline-offset:-5px;}
 
+  .search-wrap{position:relative; flex:none; display:flex; align-items:center;}
+  .search-wrap svg{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ink-faint); pointer-events:none;}
+  .search-input{
+    font-family:var(--mono); font-size:13px; color:var(--ink);
+    border:1px solid var(--panel-border); background:var(--paper);
+    padding:9px 12px 9px 32px; width:190px;
+    transition:width .22s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);
+  }
+  .search-input::placeholder{color:var(--ink-faint);}
+  .search-input:hover{border-color:var(--ink-faint);}
+  .search-input:focus{
+    outline:none; width:250px; border-color:var(--red);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--red) 13%, transparent);
+  }
+  #noResults{display:none; padding:64px var(--pad-x) 72px; font-family:var(--mono); font-size:14px; color:var(--ink-faint);}
+  #noResults b{color:var(--ink-soft); font-weight:500;}
+  .search-hit{animation:hitFlash 1.1s var(--ease);}
+  @keyframes hitFlash{
+    0%{box-shadow:inset 0 0 0 2px var(--red);}
+    75%{box-shadow:inset 0 0 0 2px var(--red);}
+    100%{box-shadow:inset 0 0 0 0 transparent;}
+  }
+
+  /* ---------- section heads ---------- */
+  .ops-head{padding:60px var(--pad-x) 0; display:flex; align-items:flex-end; justify-content:space-between; gap:32px;}
+  .ops-head h2{font-size:26px; font-weight:600; margin:0; letter-spacing:-.01em;}
+  .ops-head p{margin:8px 0 0; font-size:15px; color:var(--ink-soft); max-width:62ch;}
+  .ops-head .count{font-family:var(--mono); font-size:12px; color:var(--ink-faint); white-space:nowrap; padding-bottom:5px;}
+
+  /* ---------- tool cards ---------- */
   .ops-grid{
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:1px;
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:1px;
     background:var(--panel-border);
-    margin:24px 40px 0;
+    margin:28px var(--pad-x) 0;
     border:1px solid var(--panel-border);
   }
   .op{
     background:var(--panel);
-    padding:28px 26px 26px;
-    position:relative;
-    display:flex; flex-direction:column;
+    padding:30px 28px 28px;
+    position:relative; display:flex; flex-direction:column;
+    transition:background .22s var(--ease);
   }
-  .op-tag{
-    font-family:var(--mono);
-    font-size:11px;
-    letter-spacing:.04em;
-    display:inline-block;
-    padding:3px 7px;
-    border-radius:2px;
-    width:max-content;
-    margin-bottom:16px;
+  .op.wide{grid-column:span 2;}
+  .op:hover, .op:focus-within{background:var(--paper);}
+  .op::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:2px;
+    background:var(--accent, var(--ink));
+    transform:scaleY(0); transform-origin:top;
+    transition:transform .32s var(--ease);
   }
-  .tag-red{color:var(--red); background:var(--red-wash);}
-  .tag-teal{color:var(--teal); background:var(--teal-wash);}
-  .tag-blue{color:var(--blue); background:var(--blue-wash);}
-  .tag-amber{color:var(--amber); background:var(--amber-wash);}
-  .tag-purple{color:var(--purple); background:var(--purple-wash);}
-  .tag-danger{color:var(--danger); background:var(--danger-wash);}
-  .op h3{font-size:17px; font-weight:600; margin:0 0 8px;}
-  .op p.desc{font-size:13.5px; color:var(--ink-soft); line-height:1.55; margin:0 0 20px; min-height:40px;}
+  .op:hover::before, .op:focus-within::before, .op.busy::before{transform:scaleY(1);}
+  .op.acc-red{--accent:var(--red); --wash:var(--red-wash);}
+  .op.acc-teal{--accent:var(--teal); --wash:var(--teal-wash);}
+  .op.acc-blue{--accent:var(--blue); --wash:var(--blue-wash);}
+  .op.acc-amber{--accent:var(--amber); --wash:var(--amber-wash);}
+  .op.acc-purple{--accent:var(--purple); --wash:var(--purple-wash);}
+  .op.acc-danger{--accent:var(--danger); --wash:var(--danger-wash);}
 
+  /* processing sweep */
+  .op::after{
+    content:""; position:absolute; left:0; right:0; top:0; height:2px;
+    background:linear-gradient(90deg, transparent, var(--accent, var(--ink)), transparent);
+    opacity:0; transform:translateX(-100%);
+  }
+  .op.busy::after{opacity:1; animation:sweep 1.15s linear infinite;}
+  @keyframes sweep{to{transform:translateX(100%);}}
+
+  .op-tag{
+    font-family:var(--mono); font-size:11px; letter-spacing:.05em;
+    display:inline-block; padding:5px 9px; width:max-content; margin-bottom:16px;
+    color:var(--accent); background:var(--wash);
+  }
+  .op h3{font-size:19px; font-weight:600; margin:0 0 9px; letter-spacing:-.005em;}
+  .op p.desc{font-size:14.5px; color:var(--ink-soft); line-height:1.6; margin:0 0 20px; min-height:46px;}
+
+  /* corner brackets */
+  .op .b{position:absolute; width:11px; height:11px; pointer-events:none;}
+  .op .b::before,.op .b::after{content:""; position:absolute; background:var(--panel-border); transition:background .25s var(--ease);}
+  .op:hover .b::before, .op:hover .b::after{background:var(--accent);}
+  .op .b.c1{top:0;left:0;} .op .b.c2{top:0;right:0;} .op .b.c3{bottom:0;left:0;} .op .b.c4{bottom:0;right:0;}
+  .op .b::before{width:11px; height:1px;} .op .b::after{width:1px; height:11px;}
+  .op .b.c1::before,.op .b.c1::after{top:0;left:0;}
+  .op .b.c2::before,.op .b.c2::after{top:0;right:0;}
+  .op .b.c3::before,.op .b.c3::after{bottom:0;left:0;}
+  .op .b.c4::before,.op .b.c4::after{bottom:0;right:0;}
+
+  /* ---------- drop zone ---------- */
   .drop{
-    border:1px solid var(--panel-border);
+    border:1px dashed var(--panel-border);
     background:var(--paper);
-    padding:14px;
-    position:relative;
-    margin-bottom:10px;
-    transition:border-color .15s ease, background .15s ease;
+    padding:17px; position:relative; margin-bottom:12px;
+    transition:border-color .2s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease);
   }
-  .drop.drag{border-color:var(--blue-bright); background:var(--blue-wash);}
-  .drop input[type="file"]{
-    position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+  .drop:hover{border-color:var(--accent); background:var(--panel-2);}
+  .drop.drag{
+    border-style:solid; border-color:var(--accent); background:var(--wash);
+    box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
   }
-  .drop-inner{display:flex; align-items:center; gap:10px; pointer-events:none;}
-  .drop-inner svg{flex:none;}
-  .drop-label{font-size:12.5px; color:var(--ink-soft);}
+  .drop.loaded{border-style:solid; border-color:var(--accent);}
+  .drop input[type="file"]{position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;}
+  .drop input[type="file"]:focus-visible{outline:2px solid var(--blue-bright); outline-offset:2px;}
+  .drop-inner{display:flex; align-items:center; gap:11px; pointer-events:none;}
+  .drop-inner svg{flex:none; color:var(--ink-faint); transition:transform .25s var(--ease), color .2s var(--ease);}
+  .drop:hover .drop-inner svg{transform:translateY(-2px); color:var(--accent);}
+  .drop-label{font-size:13.5px; color:var(--ink-soft);}
   .drop-label b{color:var(--ink); font-weight:600;}
+
   .file-chip{
-    font-family:var(--mono); font-size:11.5px; color:var(--ink);
-    background:var(--panel); border:1px solid var(--panel-border);
-    padding:6px 8px; margin-top:8px; display:none;
+    font-family:var(--mono); font-size:12px; color:var(--ink);
+    background:var(--panel-2); border:1px solid var(--hairline);
+    padding:9px 11px; margin-bottom:12px; display:none;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
 
-  .field-row{display:flex; gap:8px; margin-bottom:10px;}
-  .field{
-    flex:1;
+  /* ---------- preview ---------- */
+  .preview-box{
+    display:none; margin-bottom:12px; border:1px solid var(--hairline);
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/12px 12px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/12px 12px,
+      var(--paper);
+    padding:12px; text-align:center;
+  }
+  .preview-box img{
+    max-width:100%; max-height:190px; display:block; margin:0 auto;
     border:1px solid var(--panel-border);
-    background:var(--paper);
-    padding:9px 10px;
-    font-family:var(--mono);
-    font-size:12.5px;
-    color:var(--ink);
-    width:100%;
+    box-shadow:0 2px 10px rgba(20,17,10,.08);
+    animation:rise .45s var(--ease) both;
+  }
+  @keyframes rise{from{opacity:0; transform:translateY(6px) scale(.985);} to{opacity:1; transform:none;}}
+  .preview-label{
+    font-family:var(--mono); font-size:11px; color:var(--ink-faint);
+    margin-top:10px; display:block; letter-spacing:.01em;
+  }
+
+  /* ---------- reorder list ---------- */
+  .sortlist{display:none; margin-bottom:12px; border:1px solid var(--hairline); background:var(--paper);}
+  .sortlist ul{margin:0; padding:0;}
+  .sortlist li{
+    list-style:none; display:flex; align-items:center; gap:10px;
+    padding:10px 12px; font-family:var(--mono); font-size:12px;
+    border-bottom:1px solid var(--hairline); cursor:grab; background:var(--paper);
+    transition:background .16s var(--ease);
+  }
+  .sortlist li:last-child{border-bottom:none;}
+  .sortlist li:hover{background:var(--panel-2);}
+  .sortlist li.dragging{opacity:.4; cursor:grabbing;}
+  .sortlist li .idx{color:var(--accent); min-width:18px;}
+  .sortlist li .nm{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sortlist li .grip{color:var(--ink-faint); letter-spacing:-2px;}
+
+  /* ---------- page organiser ---------- */
+  .pagegrid{
+    display:none; grid-template-columns:repeat(auto-fill, minmax(84px, 1fr)); gap:10px;
+    margin-bottom:12px; max-height:320px; overflow:auto;
+    border:1px solid var(--hairline); background:var(--paper); padding:12px;
+  }
+  .pagegrid figure{
+    margin:0; position:relative; border:1px solid var(--hairline); cursor:grab; background:var(--paper);
+    transition:border-color .18s var(--ease), box-shadow .18s var(--ease), opacity .18s var(--ease);
+  }
+  .pagegrid figure:hover{border-color:var(--accent); box-shadow:0 3px 12px rgba(20,17,10,.1);}
+  .pagegrid figure.dragging{opacity:.4; cursor:grabbing;}
+  .pagegrid figure.dropped{opacity:.25; border-style:dashed;}
+  .pagegrid img{width:100%; display:block;}
+  .pagegrid figcaption{font-family:var(--mono); font-size:10px; text-align:center; color:var(--ink-faint); padding:4px 0;}
+  .pagegrid button{
+    position:absolute; top:4px; right:4px; border:none; cursor:pointer;
+    background:rgba(20,17,10,.78); color:#fff; font-size:11px; line-height:1;
+    width:18px; height:18px; opacity:0; transition:opacity .18s var(--ease), background .18s var(--ease);
+  }
+  .pagegrid figure:hover button, .pagegrid figure.dropped button{opacity:1;}
+  .pagegrid button:hover{background:var(--danger);}
+
+  /* ---------- fields ---------- */
+  .field-row{display:flex; gap:10px;}
+  .field-row > *{flex:1; min-width:0;}
+  .field-wrap{margin-bottom:12px;}
+  .field-label{display:block; font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-bottom:6px; letter-spacing:.01em;}
+  .field{
+    width:100%; border:1px solid var(--panel-border); background:var(--paper);
+    padding:11px 12px; font-family:var(--mono); font-size:13px; color:var(--ink);
+    transition:border-color .18s var(--ease), box-shadow .18s var(--ease);
+  }
+  textarea.field{resize:vertical; min-height:80px; line-height:1.55;}
+  select.field{
+    appearance:none; cursor:pointer; padding-right:34px;
+    background-image:url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%235c574c%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat:no-repeat; background-position:right 12px center;
   }
   .field::placeholder{color:var(--ink-faint);}
-  .field:focus{outline:none; border-color:var(--blue-bright);}
+  .field:hover{border-color:var(--ink-faint);}
+  .field:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);}
+  input[type="color"].field{padding:4px; height:41px; cursor:pointer;}
+  .check-wrap{display:flex; align-items:center; gap:10px; margin-bottom:12px; font-size:13.5px; color:var(--ink-soft); cursor:pointer;}
+  .check-wrap input{width:16px; height:16px; accent-color:var(--accent); cursor:pointer;}
+  .subfile input[type="file"]{width:100%; font-family:var(--mono); font-size:12px; color:var(--ink-soft);}
+  .subfile input[type="file"]::file-selector-button{
+    font-family:var(--mono); font-size:12px; border:1px solid var(--panel-border);
+    background:var(--panel-2); color:var(--ink); padding:7px 11px; margin-right:10px; cursor:pointer;
+    transition:border-color .18s var(--ease), background .18s var(--ease);
+  }
+  .subfile input[type="file"]::file-selector-button:hover{border-color:var(--accent); background:var(--wash);}
+  .pw-wrap{display:none;}
 
+  /* ---------- run button ---------- */
   .run-btn{
-    margin-top:auto;
-    border:1px solid var(--ink);
-    background:var(--ink);
-    color:var(--paper);
-    font-family:var(--sans);
-    font-weight:600;
-    font-size:13.5px;
-    padding:11px 14px;
-    cursor:pointer;
-    transition:background .15s ease, border-color .15s ease, color .15s ease;
+    margin-top:auto; position:relative;
+    border:1px solid var(--ink); background:var(--ink); color:var(--paper);
+    font-family:var(--sans); font-weight:600; font-size:14.5px; letter-spacing:.01em;
+    padding:13px 18px; cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    transition:background .2s var(--ease), border-color .2s var(--ease), transform .16s var(--ease), box-shadow .2s var(--ease);
   }
-  .op.acc-red .run-btn:hover{background:var(--red); border-color:var(--red);}
-  .op.acc-teal .run-btn:hover{background:var(--teal); border-color:var(--teal);}
-  .op.acc-blue .run-btn:hover{background:var(--blue); border-color:var(--blue);}
-  .op.acc-amber .run-btn:hover{background:var(--amber); border-color:var(--amber);}
-  .op.acc-purple .run-btn:hover{background:var(--purple); border-color:var(--purple);}
-  .op.destructive .run-btn:hover{background:var(--danger); border-color:var(--danger);}
-  .run-btn:focus-visible{outline:2px solid var(--blue-bright); outline-offset:2px;}
+  .run-btn:hover:not([disabled]){
+    background:var(--accent); border-color:var(--accent);
+    transform:translateY(-1px);
+    box-shadow:0 6px 18px color-mix(in srgb, var(--accent) 26%, transparent);
+  }
+  .run-btn:active:not([disabled]){transform:translateY(0); box-shadow:none;}
+  .run-btn[disabled]{opacity:.7; cursor:progress; background:var(--accent); border-color:var(--accent);}
+  .run-btn:focus-visible{outline:2px solid var(--blue-bright); outline-offset:3px;}
+  .run-btn .spin{
+    width:14px; height:14px; border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff; border-radius:50%; display:none; animation:rot .7s linear infinite;
+  }
+  .run-btn[disabled] .spin{display:block;}
+  @keyframes rot{to{transform:rotate(360deg);}}
 
+  /* ---------- status badge ---------- */
   .op-status{
-    font-family:var(--mono);
-    font-size:11.5px;
-    margin-top:10px;
-    min-height:15px;
-    color:var(--ink-faint);
+    display:none; align-items:center; gap:9px; margin-top:14px;
+    font-family:var(--mono); font-size:12px; line-height:1.5;
+    padding:9px 12px; border:1px solid var(--hairline); background:var(--panel-2);
+    color:var(--ink-soft);
+    animation:rise .3s var(--ease) both;
   }
-  .op-status.ok{color:var(--ok);}
-  .op-status.err{color:var(--danger);}
-  .op-status.busy{color:var(--blue);}
+  .op-status.show{display:flex;}
+  .op-status::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--ink-faint); flex:none;}
+  .op-status.ok{color:var(--ok); border-color:color-mix(in srgb, var(--ok) 32%, var(--hairline)); background:color-mix(in srgb, var(--ok) 7%, var(--paper));}
+  .op-status.ok::before{background:var(--ok);}
+  .op-status.err{color:var(--danger); border-color:color-mix(in srgb, var(--danger) 32%, var(--hairline)); background:color-mix(in srgb, var(--danger) 7%, var(--paper));}
+  .op-status.err::before{background:var(--danger);}
+  .op-status.busy{color:var(--blue); border-color:color-mix(in srgb, var(--blue-bright) 30%, var(--hairline)); background:var(--blue-wash);}
+  .op-status.busy::before{background:var(--blue-bright); animation:blink 1s var(--ease) infinite;}
+  @keyframes blink{50%{opacity:.25;}}
 
-  /* corner brackets on each panel */
-  .op .b{position:absolute; width:9px; height:9px; pointer-events:none;}
-  .op .b::before,.op .b::after{content:"";position:absolute;background:var(--panel-border);}
-  .op .b.c1{top:0;left:0;} .op .b.c2{top:0;right:0;} .op .b.c3{bottom:0;left:0;} .op .b.c4{bottom:0;right:0;}
-  .op .b.c1::before,.op .b.c2::before,.op .b.c3::before,.op .b.c4::before{width:9px; height:1px;}
-  .op .b.c1::after,.op .b.c2::after,.op .b.c3::after,.op .b.c4::after{width:1px; height:9px;}
-  .op .b.c1::before{top:0;left:0;} .op .b.c1::after{top:0;left:0;}
-  .op .b.c2::before{top:0;right:0;} .op .b.c2::after{top:0;right:0;}
-  .op .b.c3::before{bottom:0;left:0;} .op .b.c3::after{bottom:0;left:0;}
-  .op .b.c4::before{bottom:0;right:0;} .op .b.c4::after{bottom:0;right:0;}
+  .result{
+    display:none; margin-top:12px; border:1px solid var(--hairline); background:var(--paper);
+    padding:14px; font-family:var(--mono); font-size:12px; line-height:1.7;
+    white-space:pre-wrap; max-height:300px; overflow:auto;
+    animation:rise .3s var(--ease) both;
+  }
 
   /* ---------- footer ---------- */
   footer{
-    margin-top:60px;
-    padding:26px 40px 40px;
-    display:flex; align-items:center; justify-content:space-between;
+    margin-top:84px; padding:28px var(--pad-x) 48px;
+    display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
     border-top:1px solid var(--panel-border);
-    font-family:var(--mono);
-    font-size:11.5px;
-    color:var(--ink-faint);
+    font-family:var(--mono); font-size:12px; color:var(--ink-faint);
   }
+  footer .stack{display:flex; align-items:center; gap:0;}
+  footer .stack span{padding:0 16px; position:relative;}
+  footer .stack span:first-child{padding-left:0;}
+  footer .stack span+span::before{content:""; position:absolute; left:0; top:2px; bottom:2px; width:1px; background:var(--panel-border);}
 
-  @media (max-width:860px){
-    .hero{grid-template-columns:1fr; padding:52px 22px 56px;}
-    .hero h1{font-size:32px; max-width:none;}
-    .rig{height:220px; order:-1;}
-    .ops-head{padding:40px 22px 8px;}
-    .ops-grid{grid-template-columns:1fr; margin:20px 22px 0;}
-    header{padding:16px 22px;}
-    footer{padding:20px 22px 32px; flex-direction:column; gap:8px; align-items:flex-start;}
+  @media (max-width:1180px){
+    :root{--pad-x:30px;}
+    .ops-grid{grid-template-columns:repeat(2, 1fr);}
+    .op.wide{grid-column:span 2;}
+  }
+  @media (max-width:820px){
+    :root{--pad-x:18px;}
+    .hero{grid-template-columns:1fr; gap:32px; padding:52px var(--pad-x) 56px;}
+    .rig{height:250px; order:-1;}
+    .groupbar-outer{top:69px; flex-wrap:wrap; padding:10px var(--pad-x);}
+    .groupbar{-webkit-overflow-scrolling:touch; order:2; flex-basis:100%;}
+    .groupbar button:first-child{margin-left:0; padding-left:0;}
+    .search-wrap{order:1; flex-basis:100%;}
+    .search-input{width:100%;}
+    .search-input:focus{width:100%;}
+    .ops-head{flex-direction:column; align-items:flex-start; gap:10px; padding-top:44px;}
+    .ops-grid{grid-template-columns:1fr;}
+    .op.wide{grid-column:span 1;}
+    .op{padding:26px 22px 24px;}
+    .field-row{flex-direction:column; gap:0;}
     .crop{display:none;}
-    .spec-line{flex-wrap:wrap; row-gap:8px;}
+    footer{flex-direction:column; align-items:flex-start; gap:12px;}
+    footer .stack{flex-direction:column; align-items:flex-start; gap:6px;}
+    footer .stack span{padding:0;}
+    footer .stack span+span::before{display:none;}
   }
 
   @media (prefers-reduced-motion:reduce){
-    .mark, .page-outline, .dot-confirm{animation:none !important;}
+    *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
+    html{scroll-behavior:auto;}
   }
 </style>
 </head>
 <body>
 
-<div class="crop tl"></div>
-<div class="crop tr"></div>
-<div class="crop bl"></div>
-<div class="crop br"></div>
+<div class="crop tl"></div><div class="crop tr"></div><div class="crop bl"></div><div class="crop br"></div>
 
 <div class="sheet">
 
   <header>
     <div class="brand">
-      <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-        <rect x="3" y="3" width="20" height="20" stroke="#11151c" stroke-width="1.3"/>
-        <path d="M3 3v5M3 3h5M23 3v5M23 3h-5M3 23v-5M3 23h5M23 23v-5M23 23h-5" stroke="#c4102f" stroke-width="1.3"/>
+      <svg width="30" height="30" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <rect x="3" y="3" width="20" height="20" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3 3v5M3 3h5M23 3v5M23 3h-5M3 23v-5M3 23h5M23 23v-5M23 23h-5" stroke="#b23a2c" stroke-width="1.4"/>
       </svg>
       <div>
         <div class="brand-name"><span class="brand-pdf">pdf</span><span class="brand-accent">RED</span></div>
         <div class="brand-sub">document processing console</div>
       </div>
     </div>
+    <div class="head-right">
+      <button type="button" class="theme-toggle" id="themeToggle" title="Toggle dark/light mode">
+        <span class="dot" id="themeDot"></span><span id="themeText">Dark</span>
+      </button>
+      <span class="engine" id="engine"><i></i><span id="engineText">connecting</span></span>
+      <a href="/docs" target="_blank" rel="noopener" class="docs-link">API reference</a>
+    </div>
   </header>
 
   <section class="hero">
     <div>
+      <p class="hero-eyebrow">31 operations, one file at a time</p>
       <h1>Every page, precisely handled.</h1>
-      <p>Six focused operations for merging, splitting, rotating and reshaping PDF files. No bloated suite, no account, no learning curve.</p>
+      <p class="hero-lead">Tell us what you're trying to do, and we'll point you to the right tool — or browse everything below.</p>
+      <div class="hero-prompt">
+        <div class="prompt-box">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.8" cy="6.8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M10.6 10.6L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          <input type="search" id="heroSearch" placeholder="What do you want to do today?" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="heroSuggest">
+          <span class="prompt-hint">↵</span>
+        </div>
+        <div class="hero-suggest" id="heroSuggest" role="listbox"></div>
+      </div>
       <div class="spec-line">
-        <span>6 operations</span>
-        <span>Any file size</span>
-        <span>No sign-up</span>
+        <span id="toolCount">tools</span>
+        <span>Files up to {{ max_upload_mb }} MB</span>
+        <span>Nothing stored</span>
       </div>
     </div>
     <div class="rig">
-      <svg width="260" height="320" viewBox="0 0 260 320">
-        <rect class="page-outline" x="40" y="20" width="180" height="240" rx="1" fill="#fafbfc" stroke="#11151c" stroke-width="1.4"/>
-        <g class="mark tl" transform="translate(28,10)">
-          <path d="M0 0 L18 0 M0 0 L0 18" stroke="#1b3b6f" stroke-width="1.6"/>
-          <circle cx="0" cy="0" r="2.4" fill="#1b3b6f"/>
-        </g>
-        <g class="mark tr" transform="translate(232,10)">
-          <path d="M0 0 L-18 0 M0 0 L0 18" stroke="#c4102f" stroke-width="1.6"/>
-          <circle cx="0" cy="0" r="2.4" fill="#c4102f"/>
-        </g>
-        <g class="mark bl" transform="translate(28,270)">
-          <path d="M0 0 L18 0 M0 0 L0 -18" stroke="#c99a2e" stroke-width="1.6"/>
-          <circle cx="0" cy="0" r="2.4" fill="#c99a2e"/>
-        </g>
-        <g class="mark br" transform="translate(232,270)">
-          <path d="M0 0 L-18 0 M0 0 L0 -18" stroke="#1f8f6d" stroke-width="1.6"/>
-          <circle cx="0" cy="0" r="2.4" fill="#1f8f6d"/>
-        </g>
-        <g class="dot-confirm" transform="translate(130,290)">
-          <circle r="3" fill="#11151c"/>
-          <text x="10" y="4" font-family="IBM Plex Mono, monospace" font-size="10" fill="#5b6474">aligned</text>
+      <svg width="280" height="340" viewBox="0 0 260 320" aria-hidden="true">
+        <rect class="page-outline" x="40" y="20" width="180" height="240" rx="1" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.4"/>
+        <line class="scanbeam" x1="42" y1="22" x2="218" y2="22" stroke="#2f6fe4" stroke-width="1.2"/>
+        <g class="mark tl" transform="translate(28,10)"><path d="M0 0 L18 0 M0 0 L0 18" stroke="#1e4d8c" stroke-width="1.6"/><circle r="2.6" fill="#1e4d8c"/></g>
+        <g class="mark tr" transform="translate(232,10)"><path d="M0 0 L-18 0 M0 0 L0 18" stroke="#b23a2c" stroke-width="1.6"/><circle r="2.6" fill="#b23a2c"/></g>
+        <g class="mark bl" transform="translate(28,270)"><path d="M0 0 L18 0 M0 0 L0 -18" stroke="#95610a" stroke-width="1.6"/><circle r="2.6" fill="#95610a"/></g>
+        <g class="mark br" transform="translate(232,270)"><path d="M0 0 L-18 0 M0 0 L0 -18" stroke="#12756a" stroke-width="1.6"/><circle r="2.6" fill="#12756a"/></g>
+        <g class="dot-confirm" transform="translate(128,292)">
+          <circle r="3" fill="var(--ink)"/>
+          <text x="11" y="4" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-soft)">aligned</text>
         </g>
       </svg>
     </div>
   </section>
 
-  <div class="ops-head">
-    <h2>Choose an operation</h2>
-    <span class="count">01–06</span>
-  </div>
-
-  <div class="ops-grid">
-
-    <!-- MERGE -->
-    <div class="op acc-red">
-      <span class="b c1"></span><span class="b c2"></span><span class="b c3"></span><span class="b c4"></span>
-      <span class="op-tag tag-red">MERGE</span>
-      <h3>Merge PDF</h3>
-      <p class="desc">Combine multiple files into one PDF, in the order you add them.</p>
-      <form id="mergeForm">
-        <div class="drop" data-drop>
-          <input type="file" id="mergeInput" multiple accept=".pdf" aria-label="Files to merge">
-          <div class="drop-inner">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4 7l4-4 4 4M2.5 13h11" stroke="#5b6474" stroke-width="1.3"/></svg>
-            <span class="drop-label"><b>Add files</b> or drop them here</span>
-          </div>
-        </div>
-        <div class="file-chip" id="mergeChip"></div>
-        <button type="submit" class="run-btn">Merge files</button>
-      </form>
-      <div id="mergeStatus" class="op-status"></div>
+  <nav class="groupbar-outer" aria-label="Tool groups and search">
+    <div class="groupbar" id="groupbar" role="tablist"></div>
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.8" cy="6.8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M10.6 10.6L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <input type="search" id="toolSearch" class="search-input" placeholder="Filter the grid below…" aria-label="Filter tools" autocomplete="off">
     </div>
+  </nav>
 
-    <!-- SPLIT -->
-    <div class="op acc-teal">
-      <span class="b c1"></span><span class="b c2"></span><span class="b c3"></span><span class="b c4"></span>
-      <span class="op-tag tag-teal">SPLIT</span>
-      <h3>Split PDF</h3>
-      <p class="desc">Break a file into individual pages, delivered as a zip archive.</p>
-      <form id="splitForm">
-        <div class="drop" data-drop>
-          <input type="file" id="splitInput" accept=".pdf" aria-label="File to split">
-          <div class="drop-inner">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4 7l4-4 4 4M2.5 13h11" stroke="#5b6474" stroke-width="1.3"/></svg>
-            <span class="drop-label"><b>Add a file</b> or drop it here</span>
-          </div>
-        </div>
-        <div class="file-chip" id="splitChip"></div>
-        <button type="submit" class="run-btn">Split PDF</button>
-      </form>
-      <div id="splitStatus" class="op-status"></div>
-    </div>
-
-    <!-- ROTATE -->
-    <div class="op acc-blue">
-      <span class="b c1"></span><span class="b c2"></span><span class="b c3"></span><span class="b c4"></span>
-      <span class="op-tag tag-blue">ROTATE</span>
-      <h3>Rotate PDF</h3>
-      <p class="desc">Rotate every page 90&deg; clockwise.</p>
-      <form id="rotateForm">
-        <div class="drop" data-drop>
-          <input type="file" id="rotateInput" accept=".pdf" aria-label="File to rotate">
-          <div class="drop-inner">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4 7l4-4 4 4M2.5 13h11" stroke="#5b6474" stroke-width="1.3"/></svg>
-            <span class="drop-label"><b>Add a file</b> or drop it here</span>
-          </div>
-        </div>
-        <div class="file-chip" id="rotateChip"></div>
-        <button type="submit" class="run-btn">Rotate PDF</button>
-      </form>
-      <div id="rotateStatus" class="op-status"></div>
-    </div>
-
-    <!-- TO JPG -->
-    <div class="op acc-amber">
-      <span class="b c1"></span><span class="b c2"></span><span class="b c3"></span><span class="b c4"></span>
-      <span class="op-tag tag-amber">RASTER</span>
-      <h3>Convert to JPG</h3>
-      <p class="desc">Turn each page into a high-resolution JPG, delivered as a zip.</p>
-      <form id="jpgForm">
-        <div class="drop" data-drop>
-          <input type="file" id="jpgInput" accept=".pdf" aria-label="File to convert">
-          <div class="drop-inner">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4 7l4-4 4 4M2.5 13h11" stroke="#5b6474" stroke-width="1.3"/></svg>
-            <span class="drop-label"><b>Add a file</b> or drop it here</span>
-          </div>
-        </div>
-        <div class="file-chip" id="jpgChip"></div>
-        <button type="submit" class="run-btn">Convert to JPG</button>
-      </form>
-      <div id="jpgStatus" class="op-status"></div>
-    </div>
-
-    <!-- REMOVE PAGES -->
-    <div class="op destructive">
-      <span class="b c1"></span><span class="b c2"></span><span class="b c3"></span><span class="b c4"></span>
-      <span class="op-tag tag-danger">TRIM</span>
-      <h3>Remove pages</h3>
-      <p class="desc">Delete specific pages by number, like 1,3,5.</p>
-      <form id="removeForm">
-        <div class="drop" data-drop>
-          <input type="file" id="removeInput" accept=".pdf" aria-label="File to edit">
-          <div class="drop-inner">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4 7l4-4 4 4M2.5 13h11" stroke="#5b6474" stroke-width="1.3"/></svg>
-            <span class="drop-label"><b>Add a file</b> or drop it here</span>
-          </div>
-        </div>
-        <div class="file-chip" id="removeChip"></div>
-        <input type="text" id="pagesToRemove" class="field" placeholder="Pages to remove, e.g. 1,3,5" style="margin-bottom:10px;">
-        <button type="submit" class="run-btn">Remove pages</button>
-      </form>
-      <div id="removeStatus" class="op-status"></div>
-    </div>
-
-    <!-- EXTRACT PAGES -->
-    <div class="op acc-purple">
-      <span class="b c1"></span><span class="b c2"></span><span class="b c3"></span><span class="b c4"></span>
-      <span class="op-tag tag-purple">RANGE</span>
-      <h3>Extract pages</h3>
-      <p class="desc">Pull a page range into a brand-new PDF file.</p>
-      <form id="extractForm">
-        <div class="drop" data-drop>
-          <input type="file" id="extractInput" accept=".pdf" aria-label="File to extract from">
-          <div class="drop-inner">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4 7l4-4 4 4M2.5 13h11" stroke="#5b6474" stroke-width="1.3"/></svg>
-            <span class="drop-label"><b>Add a file</b> or drop it here</span>
-          </div>
-        </div>
-        <div class="file-chip" id="extractChip"></div>
-        <div class="field-row">
-          <input type="number" id="startPage" class="field" placeholder="Start" min="1">
-          <input type="number" id="endPage" class="field" placeholder="End" min="1">
-        </div>
-        <button type="submit" class="run-btn">Extract pages</button>
-      </form>
-      <div id="extractStatus" class="op-status"></div>
-    </div>
-
-  </div>
+  <main id="groups"></main>
+  <div id="noResults"></div>
 
   <footer>
-    <span><span class="brand-pdf">pdf</span><span class="brand-accent">RED</span> &mdash; document processing console</span>
-    <span id="year"></span>
+    <span><span class="brand-pdf">pdf</span><span class="brand-accent">RED</span> — document processing console</span>
+    <div class="stack">
+      <span>FastAPI</span><span>PyMuPDF</span><span>no external services</span><span id="year"></span>
+    </div>
   </footer>
 
 </div>
 
 <script>
-  document.getElementById('year').textContent = new Date().getFullYear();
+/* ------------------------------------------------------------------ *
+ * Tool registry. One entry per endpoint; the cards are built from it. *
+ * ------------------------------------------------------------------ */
+const PW = {name:'password', label:'Password (only if the file is locked)', type:'password', placeholder:'••••••', locked:true};
 
-  function bytesToSize(bytes){
-    if(bytes === 0) return '0 B';
-    const units = ['B','KB','MB','GB'];
-    const i = Math.floor(Math.log(bytes)/Math.log(1024));
-    return (bytes/Math.pow(1024,i)).toFixed(1)+' '+units[i];
+const TOOLS = [
+  /* ---------------- ORGANIZE ---------------- */
+  {group:'Organize', accent:'red', tag:'MERGE', title:'Merge PDF', endpoint:'/api/merge',
+   desc:'Combine files into one document. Drag the list to set the order.',
+   fileField:'files', multiple:true, reorder:true, out:'merged.pdf', fields:[PW]},
+
+  {group:'Organize', accent:'teal', tag:'SPLIT', title:'Split PDF', endpoint:'/api/split',
+   desc:'One PDF per page, or one PDF per range you name. Delivered as a zip.',
+   out:'split_pages.zip',
+   fields:[{name:'ranges', label:'Ranges (leave blank to split every page)', type:'text', placeholder:'1-3,7,9-12'}, PW]},
+
+  {group:'Organize', accent:'purple', tag:'RANGE', title:'Extract pages', endpoint:'/api/extract-pages',
+   desc:'Pull a page range into a new document.', out:'extracted.pdf',
+   fields:[{name:'start_page', label:'Start', type:'number', value:1, min:1, half:true},
+           {name:'end_page', label:'End', type:'number', value:1, min:1, half:true}, PW]},
+
+  {group:'Organize', accent:'danger', tag:'TRIM', title:'Remove pages', endpoint:'/api/remove-pages',
+   desc:'Delete pages by number or range.', out:'pages_removed.pdf',
+   fields:[{name:'pages', label:'Pages to remove', type:'text', placeholder:'1,3,5-8', required:true}, PW]},
+
+  {group:'Organize', accent:'blue', tag:'ARRANGE', title:'Organise pages', endpoint:'/api/organize-pages',
+   desc:'Drag thumbnails to reorder. Drop a page to delete it.', out:'organized.pdf',
+   wide:true, organizer:true, fields:[PW]},
+
+  {group:'Organize', accent:'blue', tag:'ROTATE', title:'Rotate PDF', endpoint:'/api/rotate',
+   desc:'Turn every page, or only the ones you list.', out:'rotated.pdf',
+   fields:[{name:'angle', label:'Angle', type:'select', options:[['90','90° clockwise'],['180','180°'],['270','90° counter-clockwise']]},
+           {name:'pages', label:'Pages (blank rotates all)', type:'text', placeholder:'2,4-6'}, PW]},
+
+  {group:'Organize', accent:'teal', tag:'SHRINK', title:'Compress PDF', endpoint:'/api/compress',
+   desc:'Recompress streams and downsample images. Reports the size saved.',
+   out:'compressed.pdf', reportSize:true,
+   fields:[{name:'level', label:'Level', type:'select', options:[['light','Light — lossless only'],['balanced','Balanced'],['strong','Strong'],['extreme','Extreme — smallest']], value:'balanced'}, PW]},
+
+  {group:'Organize', accent:'danger', tag:'REPAIR', title:'Repair PDF', endpoint:'/api/repair',
+   desc:'Rebuild a broken or truncated file and recover what is readable.',
+   out:'repaired.pdf', noPreview:true, fields:[]},
+
+  /* ---------------- CONVERT ---------------- */
+  {group:'Convert', accent:'amber', tag:'RASTER', title:'PDF to image', endpoint:'/api/pdf-to-jpg',
+   desc:'Every page as a JPG or PNG, delivered as a zip.', out:'pdf_images.zip',
+   fields:[{name:'image_format', label:'Format', type:'select', options:[['jpg','JPG'],['png','PNG']], half:true},
+           {name:'dpi', label:'DPI', type:'number', value:150, min:72, max:400, half:true}, PW]},
+
+  {group:'Convert', accent:'blue', tag:'WORD', title:'PDF to Word', endpoint:'/api/pdf-to-word',
+   desc:'Editable .docx with the layout carried across.', out:'converted.docx', fields:[PW]},
+
+  {group:'Convert', accent:'teal', tag:'EXCEL', title:'PDF to Excel', endpoint:'/api/pdf-to-excel',
+   desc:'Each detected table becomes its own worksheet.', out:'tables.xlsx', fields:[PW]},
+
+  {group:'Convert', accent:'amber', tag:'SLIDES', title:'PDF to PowerPoint', endpoint:'/api/pdf-to-powerpoint',
+   desc:'One slide per page at full bleed.', out:'slides.pptx',
+   fields:[{name:'dpi', label:'Render DPI', type:'number', value:150, min:72, max:300}, PW]},
+
+  {group:'Convert', accent:'purple', tag:'TEXT', title:'PDF to text', endpoint:'/api/pdf-to-text',
+   desc:'Plain text with page markers.', out:'extracted.txt', fields:[PW]},
+
+  {group:'Convert', accent:'purple', tag:'MARKDOWN', title:'PDF to Markdown', endpoint:'/api/pdf-to-markdown',
+   desc:'Structured Markdown that keeps headings, lists and tables.', out:'converted.md', fields:[PW]},
+
+  {group:'Convert', accent:'teal', tag:'IMAGES', title:'Images to PDF', endpoint:'/api/images-to-pdf',
+   desc:'Photos or scans into one document, in the order you arrange them.',
+   fileField:'files', multiple:true, reorder:true, accept:'image/*', noPreview:true, out:'images.pdf',
+   fields:[{name:'page_size', label:'Page size', type:'select', options:[['fit','Fit each image'],['a4','A4'],['letter','Letter'],['legal','Legal'],['a3','A3']], half:true},
+           {name:'margin', label:'Margin (pt)', type:'number', value:0, min:0, max:144, half:true}]},
+
+  {group:'Convert', accent:'amber', tag:'WEB', title:'Web page to PDF', endpoint:'/api/html-to-pdf',
+   desc:'Render a live URL or your own HTML into a paged document.',
+   noFile:true, out:'webpage.pdf',
+   fields:[{name:'url', label:'URL', type:'text', placeholder:'https://example.com'},
+           {name:'html', label:'…or paste HTML', type:'textarea', placeholder:'<h1>Report</h1><p>…</p>'},
+           {name:'page_size', label:'Page size', type:'select', options:[['a4','A4'],['letter','Letter'],['legal','Legal'],['a3','A3']]}]},
+
+  /* ---------------- SECURE ---------------- */
+  {group:'Secure', accent:'red', tag:'PROTECT', title:'Protect PDF', endpoint:'/api/protect',
+   desc:'AES-256 encryption with the permissions you choose.', out:'protected.pdf',
+   fields:[{name:'user_password', label:'Open password', type:'password', required:true, placeholder:'at least 4 characters'},
+           {name:'owner_password', label:'Owner password (optional)', type:'password', placeholder:'defaults to the open password'},
+           {name:'allow_printing', label:'Allow printing', type:'checkbox', value:true},
+           {name:'allow_copying', label:'Allow copying text', type:'checkbox', value:false}, PW]},
+
+  {group:'Secure', accent:'teal', tag:'UNLOCK', title:'Unlock PDF', endpoint:'/api/unlock',
+   desc:'Remove the password and restrictions from a file you own.', out:'unlocked.pdf',
+   fields:[{name:'password', label:'Current password', type:'password', placeholder:'••••••'}]},
+
+  {group:'Secure', accent:'red', tag:'WATERMARK', title:'Watermark', endpoint:'/api/watermark',
+   desc:'Stamp text, an image, or both across every page.', out:'watermarked.pdf',
+   fields:[{name:'text', label:'Watermark text', type:'text', placeholder:'CONFIDENTIAL'},
+           {name:'image', label:'…or an image', type:'file', accept:'image/*'},
+           {name:'opacity', label:'Opacity', type:'number', value:0.25, step:0.05, min:0.02, max:1, half:true},
+           {name:'angle', label:'Angle', type:'select', options:[['45','45°'],['0','0°'],['90','90°'],['270','270°']], half:true},
+           {name:'font_size', label:'Font size', type:'number', value:48, min:8, max:200, half:true},
+           {name:'color', label:'Colour', type:'color', value:'#b23a2c', half:true},
+           {name:'scale', label:'Image scale', type:'number', value:0.6, step:0.05, min:0.05, max:1}, PW]},
+
+  {group:'Secure', accent:'blue', tag:'NUMBERS', title:'Page numbers', endpoint:'/api/page-numbers',
+   desc:'Number pages with your own format. {n} is the number, {total} the count.',
+   out:'numbered.pdf',
+   fields:[{name:'position', label:'Position', type:'select', options:[['bottom-center','Bottom centre'],['bottom-right','Bottom right'],['bottom-left','Bottom left'],['top-center','Top centre'],['top-right','Top right'],['top-left','Top left']]},
+           {name:'template', label:'Format', type:'text', value:'{n}', placeholder:'Page {n} of {total}'},
+           {name:'start_at', label:'Start at', type:'number', value:1, min:0, half:true},
+           {name:'font_size', label:'Size', type:'number', value:10, min:5, max:36, half:true},
+           {name:'color', label:'Colour', type:'color', value:'#1b1a16', half:true},
+           {name:'skip_first', label:'Skip the cover page', type:'checkbox', value:false}, PW]},
+
+  {group:'Secure', accent:'purple', tag:'SIGN', title:'Sign PDF', endpoint:'/api/sign',
+   desc:'Place a signature image with an optional name and date caption.', out:'signed.pdf',
+   fields:[{name:'signature', label:'Signature image', type:'file', accept:'image/*', required:true},
+           {name:'name', label:'Printed name', type:'text', placeholder:'Frederick Das'},
+           {name:'page', label:'Page', type:'number', value:1, min:1, half:true},
+           {name:'width', label:'Width (pt)', type:'number', value:160, min:40, half:true},
+           {name:'x', label:'X', type:'number', value:72, half:true},
+           {name:'y', label:'Y', type:'number', value:600, half:true},
+           {name:'stamp_date', label:'Add today’s date', type:'checkbox', value:true}, PW]},
+
+  /* ---------------- EDIT ---------------- */
+  {group:'Edit', accent:'blue', tag:'REPLACE', title:'Replace text', endpoint:'/api/replace-text',
+   desc:'Find every occurrence and write the new text in its place.', out:'text_replaced.pdf',
+   fields:[{name:'find', label:'Find', type:'text', required:true, placeholder:'Draft'},
+           {name:'replace', label:'Replace with', type:'text', placeholder:'Final'},
+           {name:'color', label:'Text colour', type:'color', value:'#1b1a16', half:true},
+           {name:'font_size', label:'Size (0 = auto)', type:'number', value:0, min:0, max:72, half:true},
+           {name:'match_case', label:'Match case', type:'checkbox', value:true}, PW]},
+
+  {group:'Edit', accent:'purple', tag:'TEXT', title:'Add text', endpoint:'/api/add-text',
+   desc:'Drop a text block at any coordinate. Origin is the top-left corner.', out:'text_added.pdf',
+   fields:[{name:'text', label:'Text', type:'textarea', required:true, placeholder:'Approved by…'},
+           {name:'page', label:'Page', type:'number', value:1, min:1, half:true},
+           {name:'font_size', label:'Size', type:'number', value:14, min:4, max:96, half:true},
+           {name:'x', label:'X (pt)', type:'number', value:72, half:true},
+           {name:'y', label:'Y (pt)', type:'number', value:72, half:true},
+           {name:'color', label:'Colour', type:'color', value:'#1b1a16', half:true},
+           {name:'bold', label:'Bold', type:'checkbox', value:false}, PW]},
+
+  {group:'Edit', accent:'teal', tag:'SHAPE', title:'Add shape', endpoint:'/api/add-shape',
+   desc:'Rectangles, circles, lines and arrows for callouts.', out:'shape_added.pdf',
+   fields:[{name:'shape', label:'Shape', type:'select', options:[['rectangle','Rectangle'],['circle','Circle'],['line','Line'],['arrow','Arrow']]},
+           {name:'page', label:'Page', type:'number', value:1, min:1, half:true},
+           {name:'line_width', label:'Stroke', type:'number', value:1.5, step:0.5, half:true},
+           {name:'x', label:'X', type:'number', value:72, half:true},
+           {name:'y', label:'Y', type:'number', value:72, half:true},
+           {name:'width', label:'Width', type:'number', value:200, half:true},
+           {name:'height', label:'Height', type:'number', value:120, half:true},
+           {name:'color', label:'Stroke colour', type:'color', value:'#1e4d8c', half:true},
+           {name:'fill', label:'Fill (blank = none)', type:'text', placeholder:'#eef2fb', half:true}, PW]},
+
+  {group:'Edit', accent:'amber', tag:'IMAGE', title:'Add image', endpoint:'/api/add-image',
+   desc:'Place a logo, stamp or photo on a page.', out:'image_added.pdf',
+   fields:[{name:'image', label:'Image file', type:'file', accept:'image/*', required:true},
+           {name:'page', label:'Page', type:'number', value:1, min:1, half:true},
+           {name:'width', label:'Width (pt)', type:'number', value:200, min:10, half:true},
+           {name:'x', label:'X', type:'number', value:72, half:true},
+           {name:'y', label:'Y', type:'number', value:72, half:true}, PW]},
+
+  {group:'Edit', accent:'amber', tag:'MARKUP', title:'Highlight & mark up', endpoint:'/api/annotate',
+   desc:'Mark every match with a highlight, underline or strikeout.', out:'annotated.pdf',
+   fields:[{name:'search', label:'Words to mark', type:'text', required:true, placeholder:'deadline'},
+           {name:'style', label:'Style', type:'select', options:[['highlight','Highlight'],['underline','Underline'],['strikeout','Strikeout'],['squiggly','Squiggly']], half:true},
+           {name:'color', label:'Colour', type:'color', value:'#f2c744', half:true},
+           {name:'note', label:'Attached note (optional)', type:'text', placeholder:'Check this figure'}, PW]},
+
+  {group:'Edit', accent:'purple', tag:'NOTE', title:'Add sticky note', endpoint:'/api/sticky-note',
+   desc:'Anchor a comment at a point on the page.', out:'note_added.pdf',
+   fields:[{name:'text', label:'Note', type:'textarea', required:true, placeholder:'Needs a source.'},
+           {name:'page', label:'Page', type:'number', value:1, min:1, half:true},
+           {name:'author', label:'Author', type:'text', placeholder:'Fred', half:true},
+           {name:'x', label:'X', type:'number', value:72, half:true},
+           {name:'y', label:'Y', type:'number', value:72, half:true}, PW]},
+
+  {group:'Edit', accent:'blue', tag:'FORMS', title:'Inspect form fields', endpoint:'/api/form-fields',
+   desc:'List every fillable field with its type and current value.',
+   resultType:'json', fields:[PW]},
+
+  {group:'Edit', accent:'blue', tag:'FORMS', title:'Fill form', endpoint:'/api/fill-form',
+   desc:'Send values as JSON keyed by field name. Flatten to lock them in.',
+   out:'form_filled.pdf',
+   fields:[{name:'values', label:'Values (JSON)', type:'textarea', required:true, placeholder:'{"full_name": "Frederick", "agree": true}'},
+           {name:'flatten', label:'Flatten after filling', type:'checkbox', value:false}, PW]},
+
+  {group:'Edit', accent:'teal', tag:'FORMS', title:'Add form field', endpoint:'/api/add-form-field',
+   desc:'Create a fillable text box, checkbox or radio button.', out:'field_added.pdf',
+   fields:[{name:'name', label:'Field name', type:'text', required:true, placeholder:'full_name'},
+           {name:'field_type', label:'Type', type:'select', options:[['text','Text box'],['checkbox','Checkbox'],['radio','Radio button']], half:true},
+           {name:'page', label:'Page', type:'number', value:1, min:1, half:true},
+           {name:'x', label:'X', type:'number', value:72, half:true},
+           {name:'y', label:'Y', type:'number', value:72, half:true},
+           {name:'width', label:'Width', type:'number', value:200, half:true},
+           {name:'height', label:'Height', type:'number', value:24, half:true}, PW]},
+
+  {group:'Edit', accent:'danger', tag:'REDACT', title:'Redact text', endpoint:'/api/redact',
+   desc:'Delete matching text from the file itself, not just cover it.', out:'redacted.pdf',
+   fields:[{name:'search', label:'Text to redact', type:'text', required:true, placeholder:'Account no.'},
+           {name:'pages', label:'Pages (blank = all)', type:'text', placeholder:'1,4-6'}, PW]},
+
+  {group:'Edit', accent:'danger', tag:'FLATTEN', title:'Flatten PDF', endpoint:'/api/flatten',
+   desc:'Bake form values and annotations into the page so nothing can be edited.',
+   out:'flattened.pdf', fields:[PW]}
+];
+
+const GROUPS = [
+  ['Organize', 'Split, merge, reorder and slim down documents.'],
+  ['Convert',  'Move content out of PDF, or bring other formats in.'],
+  ['Secure',   'Passwords, watermarks, numbering and signatures.'],
+  ['Edit',     'Change what is on the page: text, shapes, markup and forms.'],
+];
+
+/* ------------------------------------------------------------------ *
+ * Theme Toggle Handler                                                *
+ * ------------------------------------------------------------------ */
+const toggleBtn = document.getElementById('themeToggle');
+const themeText = document.getElementById('themeText');
+
+function setTheme(theme) {
+  if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    themeText.textContent = 'Light';
+    localStorage.setItem('pdfred_theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    themeText.textContent = 'Dark';
+    localStorage.setItem('pdfred_theme', 'light');
   }
+}
 
-  function wireChip(inputId, chipId){
-    const input = document.getElementById(inputId);
-    const chip = document.getElementById(chipId);
-    input.addEventListener('change', () => {
-      if(input.files.length === 0){ chip.style.display = 'none'; return; }
-      const names = Array.from(input.files).map(f => `${f.name} (${bytesToSize(f.size)})`);
-      chip.textContent = names.length > 1 ? `${names.length} files selected` : names[0];
-      chip.style.display = 'block';
-    });
+toggleBtn.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  setTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+// Load saved preference
+const savedTheme = localStorage.getItem('pdfred_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+setTheme(savedTheme);
+
+/* ------------------------------------------------------------------ *
+ * Rendering                                                           *
+ * ------------------------------------------------------------------ */
+const groupsEl = document.getElementById('groups');
+const barEl = document.getElementById('groupbar');
+const cardEls = [];
+document.getElementById('year').textContent = new Date().getFullYear();
+document.getElementById('toolCount').textContent = TOOLS.length + ' tools';
+
+function el(tag, attrs = {}, html) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value === undefined || value === null || value === false) continue;
+    node.setAttribute(key, value === true ? '' : value);
   }
-  ['merge','split','rotate','jpg','remove','extract'].forEach(k => wireChip(k+'Input', k+'Chip'));
+  if (html !== undefined) node.innerHTML = html;
+  return node;
+}
 
-  // drag & drop visual affordance for every drop zone
-  document.querySelectorAll('[data-drop]').forEach(zone => {
-    const input = zone.querySelector('input[type="file"]');
-    ['dragenter','dragover'].forEach(evt => zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.add('drag'); }));
-    ['dragleave','drop'].forEach(evt => zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.remove('drag'); }));
+function bytesToSize(bytes) {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i];
+}
+
+function fieldMarkup(field, id) {
+  if (field.type === 'checkbox') {
+    return `<label class="check-wrap"><input type="checkbox" id="${id}" ${field.value ? 'checked' : ''}><span>${field.label}</span></label>`;
+  }
+  if (field.type === 'file') {
+    return `<div class="field-wrap subfile${field.locked ? ' pw-wrap' : ''}">
+              <label class="field-label" for="${id}">${field.label}</label>
+              <input type="file" id="${id}" accept="${field.accept || '*/*'}"></div>`;
+  }
+  if (field.type === 'select') {
+    const options = field.options.map(([v, l]) =>
+      `<option value="${v}" ${String(field.value) === v ? 'selected' : ''}>${l}</option>`).join('');
+    return `<div class="field-wrap"><label class="field-label" for="${id}">${field.label}</label>
+              <select class="field" id="${id}">${options}</select></div>`;
+  }
+  if (field.type === 'textarea') {
+    return `<div class="field-wrap"><label class="field-label" for="${id}">${field.label}</label>
+              <textarea class="field" id="${id}" placeholder="${field.placeholder || ''}">${field.value || ''}</textarea></div>`;
+  }
+  const extra = [
+    field.min !== undefined ? `min="${field.min}"` : '',
+    field.max !== undefined ? `max="${field.max}"` : '',
+    field.step !== undefined ? `step="${field.step}"` : '',
+  ].join(' ');
+  return `<div class="field-wrap${field.locked ? ' pw-wrap' : ''}">
+            <label class="field-label" for="${id}">${field.label}</label>
+            <input class="field" type="${field.type}" id="${id}"
+                   value="${field.value !== undefined ? field.value : ''}"
+                   placeholder="${field.placeholder || ''}" ${extra}></div>`;
+}
+
+function buildCard(tool, index) {
+  const uid = 't' + index;
+  const card = el('div', {class: `op acc-${tool.accent}${tool.wide ? ' wide' : ''}`});
+
+  const dropZone = tool.noFile ? '' : `
+    <div class="drop" data-drop>
+      <input type="file" id="${uid}File" ${tool.multiple ? 'multiple' : ''} accept="${tool.accept || 'application/pdf,.pdf'}" aria-label="${tool.title} input">
+      <div class="drop-inner">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v9M4 7l4-4 4 4M2.5 13h11" stroke="currentColor" stroke-width="1.3"/></svg>
+        <span class="drop-label"><b>${tool.multiple ? 'Add files' : 'Add a file'}</b> or drop ${tool.multiple ? 'them' : 'it'} here</span>
+      </div>
+    </div>
+    <div class="file-chip" id="${uid}Chip"></div>
+    ${tool.reorder ? `<div class="sortlist" id="${uid}Sort"><ul></ul></div>` : ''}
+    ${tool.organizer ? `<div class="pagegrid" id="${uid}Grid"></div>` : ''}
+    ${tool.noPreview ? '' : `<div class="preview-box" id="${uid}Preview"><img alt="First page of the uploaded file"><span class="preview-label">page 1</span></div>`}`;
+
+  const halves = [];
+  let fieldsHtml = '';
+  (tool.fields || []).forEach((field, i) => {
+    const markup = fieldMarkup(field, `${uid}F${i}`);
+    if (field.half) {
+      halves.push(markup);
+      if (halves.length === 2) { fieldsHtml += `<div class="field-row">${halves.join('')}</div>`; halves.length = 0; }
+    } else {
+      if (halves.length) { fieldsHtml += `<div class="field-row">${halves.join('')}</div>`; halves.length = 0; }
+      fieldsHtml += markup;
+    }
+  });
+  if (halves.length) fieldsHtml += `<div class="field-row">${halves.join('')}</div>`;
+
+  card.innerHTML = `
+    <span class="b c1"></span><span class="b c2"></span><span class="b c3"></span><span class="b c4"></span>
+    <span class="op-tag">${tool.tag}</span>
+    <h3>${tool.title}</h3>
+    <p class="desc">${tool.desc}</p>
+    ${dropZone}
+    ${fieldsHtml}
+    <button type="button" class="run-btn" id="${uid}Run"><span class="spin"></span><span>${tool.title}</span></button>
+    <div class="op-status" id="${uid}Status" role="status"></div>
+    <pre class="result" id="${uid}Result"></pre>`;
+
+  card.dataset.search = [tool.title, tool.desc, tool.tag, tool.group].join(' ').toLowerCase();
+  wire(card, tool, uid);
+  cardEls[index] = card;
+  return card;
+}
+
+GROUPS.forEach(([name, blurb], gi) => {
+  const section = el('section', {id: 'group-' + name});
+  const tools = TOOLS.filter(t => t.group === name);
+  section.appendChild(el('div', {class: 'ops-head'},
+    `<div><h2>${name}</h2><p>${blurb}</p></div><span class="count">${String(tools.length).padStart(2, '0')} tools</span>`));
+  const grid = el('div', {class: 'ops-grid'});
+  tools.forEach(tool => grid.appendChild(buildCard(tool, TOOLS.indexOf(tool))));
+  section.appendChild(grid);
+  groupsEl.appendChild(section);
+
+  const tab = el('button', {type: 'button', role: 'tab', 'aria-selected': gi === 0 ? 'true' : 'false'},
+    `${name}<b>${tools.length}</b>`);
+  tab.addEventListener('click', () => {
+    [...barEl.children].forEach(b => b.setAttribute('aria-selected', 'false'));
+    tab.setAttribute('aria-selected', 'true');
+    section.scrollIntoView({behavior: 'smooth', block: 'start'});
+  });
+  barEl.appendChild(tab);
+});
+
+// highlight the group you are actually looking at
+const spy = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const index = [...groupsEl.children].indexOf(entry.target);
+    [...barEl.children].forEach((b, i) => b.setAttribute('aria-selected', i === index ? 'true' : 'false'));
+  });
+}, {rootMargin: '-25% 0px -65% 0px'});
+[...groupsEl.children].forEach(section => spy.observe(section));
+
+/* ------------------------------------------------------------------ *
+ * Search                                                               *
+ * ------------------------------------------------------------------ */
+const searchInput = document.getElementById('toolSearch');
+const noResultsEl = document.getElementById('noResults');
+
+function filterTools(raw) {
+  const q = raw.trim().toLowerCase();
+  let firstVisible = null;
+  let anyVisible = false;
+
+  document.querySelectorAll('.op').forEach(card => {
+    const match = !q || card.dataset.search.includes(q);
+    card.style.display = match ? '' : 'none';
+    if (match) { anyVisible = true; if (!firstVisible) firstVisible = card; }
+  });
+
+  [...groupsEl.children].forEach(section => {
+    const hasVisible = [...section.querySelectorAll('.op')].some(c => c.style.display !== 'none');
+    section.style.display = (q && !hasVisible) ? 'none' : '';
+  });
+
+  if (q && !anyVisible) {
+    noResultsEl.innerHTML = `No tools match “<b>${raw.trim().replace(/</g, '&lt;')}</b>”. Try a different word, or clear the search to see everything.`;
+    noResultsEl.style.display = 'block';
+  } else {
+    noResultsEl.style.display = 'none';
+  }
+  return firstVisible;
+}
+
+searchInput.addEventListener('input', () => filterTools(searchInput.value));
+searchInput.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const first = filterTools(searchInput.value);
+  if (first) {
+    first.scrollIntoView({behavior: 'smooth', block: 'center'});
+    first.classList.remove('search-hit');
+    void first.offsetWidth;
+    first.classList.add('search-hit');
+  }
+});
+
+/* ------------------------------------------------------------------ *
+ * Hero command prompt — type what you want, pick a suggestion         *
+ * ------------------------------------------------------------------ */
+const heroInput = document.getElementById('heroSearch');
+const heroSuggestEl = document.getElementById('heroSuggest');
+let heroMatches = [];
+let heroActive = -1;
+
+function matchTools(raw) {
+  const q = raw.trim().toLowerCase();
+  if (!q) return [];
+  return TOOLS
+    .map((tool, i) => ({tool, i}))
+    .filter(({tool}) => (tool.title + ' ' + tool.desc + ' ' + tool.tag + ' ' + tool.group).toLowerCase().includes(q))
+    .sort((a, b) => a.tool.title.toLowerCase().indexOf(q) - b.tool.title.toLowerCase().indexOf(q))
+    .slice(0, 7);
+}
+
+function renderHeroSuggest() {
+  if (!heroMatches.length) {
+    heroSuggestEl.innerHTML = heroInput.value.trim()
+      ? `<div class="sug-empty">No tool matches that — try a different word, or scroll the groups below.</div>`
+      : '';
+    heroSuggestEl.classList.toggle('show', !!heroInput.value.trim());
+    return;
+  }
+  heroSuggestEl.innerHTML = heroMatches.map(({tool}, idx) => `
+    <button type="button" class="sug${idx === heroActive ? ' active' : ''}" data-idx="${idx}"
+            style="--accent:var(--${tool.accent}); --wash:var(--${tool.accent}-wash);" role="option">
+      <span class="sug-tag">${tool.tag}</span>
+      <span class="sug-title">${tool.title}</span>
+      <span class="sug-desc">${tool.desc}</span>
+    </button>`).join('');
+  heroSuggestEl.classList.add('show');
+}
+
+function closeHeroSuggest() {
+  heroSuggestEl.classList.remove('show');
+  heroInput.setAttribute('aria-expanded', 'false');
+  heroActive = -1;
+}
+
+function pickTool(matchIndex) {
+  const picked = heroMatches[matchIndex];
+  if (!picked) return;
+  searchInput.value = '';
+  filterTools('');
+  const card = cardEls[picked.i];
+  closeHeroSuggest();
+  if (!card) return;
+  card.scrollIntoView({behavior: 'smooth', block: 'center'});
+  card.classList.remove('search-hit');
+  void card.offsetWidth;
+  card.classList.add('search-hit');
+  const focusTarget = card.querySelector('input, textarea, select');
+  if (focusTarget) setTimeout(() => focusTarget.focus({preventScroll: true}), 350);
+}
+
+heroInput.addEventListener('input', () => {
+  heroMatches = matchTools(heroInput.value);
+  heroActive = -1;
+  heroInput.setAttribute('aria-expanded', heroMatches.length ? 'true' : 'false');
+  renderHeroSuggest();
+});
+
+heroInput.addEventListener('keydown', e => {
+  if (!heroMatches.length) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); heroActive = Math.min(heroActive + 1, heroMatches.length - 1); renderHeroSuggest(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); heroActive = Math.max(heroActive - 1, 0); renderHeroSuggest(); }
+  else if (e.key === 'Enter') { e.preventDefault(); pickTool(heroActive >= 0 ? heroActive : 0); }
+  else if (e.key === 'Escape') { closeHeroSuggest(); }
+});
+
+heroSuggestEl.addEventListener('mousedown', e => {
+  const btn = e.target.closest('.sug');
+  if (btn) pickTool(+btn.dataset.idx);
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.hero-prompt')) closeHeroSuggest();
+});
+
+/* ------------------------------------------------------------------ *
+ * Behaviour                                                           *
+ * ------------------------------------------------------------------ */
+function setStatus(node, text, kind) {
+  if (!text) { node.className = 'op-status'; node.textContent = ''; return; }
+  node.textContent = text;
+  node.className = 'op-status show' + (kind ? ' ' + kind : '');
+}
+
+function wire(card, tool, uid) {
+  const status = card.querySelector('#' + uid + 'Status');
+  const result = card.querySelector('#' + uid + 'Result');
+  const runBtn = card.querySelector('#' + uid + 'Run');
+  const fileInput = card.querySelector('#' + uid + 'File');
+  const state = {files: [], dropped: new Set()};
+
+  const zone = card.querySelector('[data-drop]');
+  if (zone) {
+    ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('drag'); }));
     zone.addEventListener('drop', e => {
-      if(e.dataTransfer.files.length){
-        input.files = e.dataTransfer.files;
-        input.dispatchEvent(new Event('change'));
-      }
+      if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; fileInput.dispatchEvent(new Event('change')); }
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', async () => {
+      state.files = Array.from(fileInput.files);
+      state.dropped.clear();
+      const chip = card.querySelector('#' + uid + 'Chip');
+      zone.classList.toggle('loaded', state.files.length > 0);
+      if (!state.files.length) { chip.style.display = 'none'; return; }
+      chip.textContent = state.files.length > 1
+        ? `${state.files.length} files · ${bytesToSize(state.files.reduce((a, f) => a + f.size, 0))}`
+        : `${state.files[0].name} · ${bytesToSize(state.files[0].size)}`;
+      chip.style.display = 'block';
+      setStatus(status, '', '');
+      result.style.display = 'none';
+
+      if (tool.reorder) renderSortList(card, uid, state);
+      if (!tool.noPreview) await loadPreview(card, uid, state.files[0], status);
+      if (tool.organizer) await loadPageGrid(card, uid, state, status);
+    });
+  }
+
+  runBtn.addEventListener('click', () => run(card, tool, uid, state, status, result, runBtn));
+}
+
+function revealPasswordField(card) {
+  card.querySelectorAll('.pw-wrap').forEach(n => { n.style.display = 'block'; });
+}
+
+function withField(file, extras) {
+  const form = new FormData();
+  form.append('file', file);
+  Object.entries(extras).forEach(([k, v]) => form.append(k, v));
+  return form;
+}
+
+async function loadPreview(card, uid, file, status) {
+  const box = card.querySelector('#' + uid + 'Preview');
+  if (!box || !file) return;
+  const img = box.querySelector('img');
+  const label = box.querySelector('.preview-label');
+  setStatus(status, 'Reading the file…', 'busy');
+  try {
+    const info = await fetch('/api/info', {method: 'POST', body: withField(file, {})}).then(r => r.json());
+    if (info.detail) { box.style.display = 'none'; setStatus(status, info.detail, 'err'); return; }
+    if (info.locked) {
+      box.style.display = 'none';
+      revealPasswordField(card);
+      setStatus(status, 'Locked file — enter the password, then run.', 'busy');
+      return;
+    }
+    if (info.encrypted) revealPasswordField(card);
+    const preview = await fetch('/api/preview', {method: 'POST', body: withField(file, {})});
+    if (!preview.ok) { box.style.display = 'none'; setStatus(status, '', ''); return; }
+    img.src = URL.createObjectURL(await preview.blob());
+    label.textContent = [
+      `${info.pages} page${info.pages === 1 ? '' : 's'}`,
+      bytesToSize(info.size_bytes),
+      info.page_size || '',
+      info.has_text ? 'text layer' : 'image only',
+    ].filter(Boolean).join('  ·  ');
+    box.style.display = 'block';
+    setStatus(status, '', '');
+  } catch (err) {
+    box.style.display = 'none';
+    setStatus(status, '', '');
+  }
+}
+
+function renderSortList(card, uid, state) {
+  const wrap = card.querySelector('#' + uid + 'Sort');
+  const list = wrap.querySelector('ul');
+  list.innerHTML = '';
+  state.files.forEach((file, i) => {
+    const item = el('li', {draggable: 'true', 'data-i': i});
+    item.innerHTML = `<span class="idx">${String(i + 1).padStart(2, '0')}</span><span class="nm">${file.name}</span><span class="grip">⠿</span>`;
+    list.appendChild(item);
+  });
+  wrap.style.display = state.files.length > 1 ? 'block' : 'none';
+  enableDrag(list, 'li', () => {
+    state.files = [...list.children].map(node => state.files[+node.dataset.i]);
+    [...list.children].forEach((node, i) => {
+      node.querySelector('.idx').textContent = String(i + 1).padStart(2, '0');
+      node.dataset.i = i;
     });
   });
+}
 
-  function setStatus(el, text, kind){
-    el.textContent = text;
-    el.className = 'op-status' + (kind ? ' '+kind : '');
+async function loadPageGrid(card, uid, state, status) {
+  const grid = card.querySelector('#' + uid + 'Grid');
+  if (!grid || !state.files[0]) return;
+  grid.innerHTML = '';
+  grid.style.display = 'none';
+  card.classList.add('busy');
+  setStatus(status, 'Rendering page thumbnails…', 'busy');
+  try {
+    const res = await fetch('/api/thumbnails', {method: 'POST', body: withField(state.files[0], {})});
+    if (!res.ok) { setStatus(status, (await res.json()).detail, 'err'); return; }
+    const data = await res.json();
+    data.pages.forEach(page => {
+      const figure = el('figure', {draggable: 'true', 'data-page': page.page});
+      figure.innerHTML = `<img src="${page.src}" alt="Page ${page.page}"><figcaption>${String(page.page).padStart(2, '0')}</figcaption><button type="button" title="Drop this page">×</button>`;
+      figure.querySelector('button').addEventListener('click', () => {
+        const dropped = figure.classList.toggle('dropped');
+        if (dropped) state.dropped.add(page.page); else state.dropped.delete(page.page);
+      });
+      grid.appendChild(figure);
+    });
+    grid.style.display = 'grid';
+    enableDrag(grid, 'figure', () => {});
+    setStatus(status, data.truncated
+      ? `Showing the first ${data.shown} of ${data.total} pages. Drag to reorder, × to drop.`
+      : 'Drag to reorder, × to drop a page.', '');
+  } catch (err) {
+    setStatus(status, 'Could not render thumbnails.', 'err');
+  } finally {
+    card.classList.remove('busy');
+  }
+}
+
+function enableDrag(container, selector, onChange) {
+  container._onDragChange = onChange;
+  if (container.dataset.dragWired) return;
+  container.dataset.dragWired = '1';
+  let dragged = null;
+  container.addEventListener('dragstart', e => {
+    dragged = e.target.closest(selector);
+    if (dragged) dragged.classList.add('dragging');
+  });
+  container.addEventListener('dragend', () => {
+    if (dragged) dragged.classList.remove('dragging');
+    dragged = null;
+    container._onDragChange();
+  });
+  container.addEventListener('dragover', e => {
+    e.preventDefault();
+    const target = e.target.closest(selector);
+    if (!dragged || !target || target === dragged) return;
+    const box = target.getBoundingClientRect();
+    const after = (e.clientY - box.top) > box.height / 2 || (e.clientX - box.left) > box.width / 2;
+    target.parentNode.insertBefore(dragged, after ? target.nextSibling : target);
+  });
+}
+
+function collect(card, tool, uid, state) {
+  const form = new FormData();
+
+  if (!tool.noFile) {
+    if (!state.files.length) return {error: tool.multiple ? 'Add your files first.' : 'Add a file first.'};
+    if (tool.multiple) state.files.forEach(f => form.append(tool.fileField || 'files', f));
+    else form.append('file', state.files[0]);
   }
 
-  async function downloadBlob(res, filename, statusElem){
+  if (tool.organizer) {
+    const grid = card.querySelector('#' + uid + 'Grid');
+    const order = [...grid.querySelectorAll('figure')]
+      .map(f => +f.dataset.page)
+      .filter(p => !state.dropped.has(p));
+    if (!order.length) return {error: 'Keep at least one page.'};
+    form.append('order', order.join(','));
+  }
+
+  for (const [i, field] of (tool.fields || []).entries()) {
+    const node = card.querySelector('#' + uid + 'F' + i);
+    if (!node) continue;
+    if (field.type === 'checkbox') { form.append(field.name, node.checked ? 'true' : 'false'); continue; }
+    if (field.type === 'file') {
+      if (node.files.length) form.append(field.name, node.files[0]);
+      else if (field.required) return {error: `${field.label} is required.`};
+      continue;
+    }
+    const value = node.value.trim();
+    if (!value && field.required) return {error: `${field.label} is required.`};
+    if (value !== '') form.append(field.name, value);
+  }
+  return {form};
+}
+
+async function run(card, tool, uid, state, status, result, runBtn) {
+  result.style.display = 'none';
+  const built = collect(card, tool, uid, state);
+  if (built.error) { setStatus(status, built.error, 'err'); return; }
+
+  runBtn.disabled = true;
+  card.classList.add('busy');
+  const started = performance.now();
+  setStatus(status, 'Processing…', 'busy');
+
+  try {
+    const res = await fetch(tool.endpoint, {method: 'POST', body: built.form});
+    const elapsed = ((performance.now() - started) / 1000).toFixed(1) + 's';
+
+    if (!res.ok) {
+      let detail = 'That did not work. Check the inputs and try again.';
+      try { detail = (await res.json()).detail || detail; } catch (e) {}
+      if (res.status === 401) revealPasswordField(card);
+      setStatus(status, detail, 'err');
+      return;
+    }
+
+    if (tool.resultType === 'json') {
+      const data = await res.json();
+      result.textContent = tool.resultKey ? data[tool.resultKey] : JSON.stringify(data, null, 2);
+      result.style.display = 'block';
+      setStatus(status, `Done in ${elapsed}.`, 'ok');
+      return;
+    }
+
     const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    setStatus(statusElem, 'Done — file downloaded.', 'ok');
+    const url = URL.createObjectURL(blob);
+    const link = el('a', {href: url, download: tool.out || 'output.pdf'});
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+
+    let message = `${tool.out} · ${bytesToSize(blob.size)} · ${elapsed}`;
+    if (tool.reportSize) {
+      const before = +res.headers.get('X-Original-Size') || 0;
+      const after = +res.headers.get('X-Compressed-Size') || blob.size;
+      message = before && after < before
+        ? `${bytesToSize(before)} → ${bytesToSize(after)} · ${Math.round((1 - after / before) * 100)}% smaller · ${elapsed}`
+        : `Already as small as it gets · file unchanged · ${elapsed}`;
+    }
+    const unknown = res.headers.get('X-Fields-Unknown');
+    if (unknown) message += ` · not found: ${unknown}`;
+    setStatus(status, message, 'ok');
+  } catch (err) {
+    setStatus(status, 'Could not reach the server.', 'err');
+  } finally {
+    runBtn.disabled = false;
+    card.classList.remove('busy');
   }
+}
 
-  // Merge
-  document.getElementById('mergeForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('mergeInput');
-    const status = document.getElementById('mergeStatus');
-    if (input.files.length === 0) { setStatus(status, 'Add at least one file first.', 'err'); return; }
-    const formData = new FormData();
-    for (const file of input.files) formData.append('files', file);
-    setStatus(status, 'Merging files…', 'busy');
-    try{
-      const res = await fetch('/api/merge', { method: 'POST', body: formData });
-      if (res.ok) downloadBlob(res, 'merged_output.pdf', status); else setStatus(status, 'Something went wrong. Try again.', 'err');
-    }catch(err){ setStatus(status, 'Could not reach the server.', 'err'); }
-  });
-
-  // Split
-  document.getElementById('splitForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('splitInput');
-    const status = document.getElementById('splitStatus');
-    if (input.files.length === 0) { setStatus(status, 'Add a file first.', 'err'); return; }
-    const formData = new FormData(); formData.append('file', input.files[0]);
-    setStatus(status, 'Splitting pages…', 'busy');
-    try{
-      const res = await fetch('/api/split', { method: 'POST', body: formData });
-      if (res.ok) downloadBlob(res, 'split_pages.zip', status); else setStatus(status, 'Something went wrong. Try again.', 'err');
-    }catch(err){ setStatus(status, 'Could not reach the server.', 'err'); }
-  });
-
-  // Rotate
-  document.getElementById('rotateForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('rotateInput');
-    const status = document.getElementById('rotateStatus');
-    if (input.files.length === 0) { setStatus(status, 'Add a file first.', 'err'); return; }
-    const formData = new FormData(); formData.append('file', input.files[0]);
-    setStatus(status, 'Rotating pages…', 'busy');
-    try{
-      const res = await fetch('/api/rotate', { method: 'POST', body: formData });
-      if (res.ok) downloadBlob(res, 'rotated_output.pdf', status); else setStatus(status, 'Something went wrong. Try again.', 'err');
-    }catch(err){ setStatus(status, 'Could not reach the server.', 'err'); }
-  });
-
-  // To JPG
-  document.getElementById('jpgForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('jpgInput');
-    const status = document.getElementById('jpgStatus');
-    if (input.files.length === 0) { setStatus(status, 'Add a file first.', 'err'); return; }
-    const formData = new FormData(); formData.append('file', input.files[0]);
-    setStatus(status, 'Converting pages…', 'busy');
-    try{
-      const res = await fetch('/api/pdf-to-jpg', { method: 'POST', body: formData });
-      if (res.ok) downloadBlob(res, 'pdf_images.zip', status); else setStatus(status, 'Something went wrong. Try again.', 'err');
-    }catch(err){ setStatus(status, 'Could not reach the server.', 'err'); }
-  });
-
-  // Remove pages
-  document.getElementById('removeForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('removeInput');
-    const pagesInput = document.getElementById('pagesToRemove').value;
-    const status = document.getElementById('removeStatus');
-    if (input.files.length === 0 || !pagesInput) { setStatus(status, 'Add a file and the pages to remove.', 'err'); return; }
-    const formData = new FormData();
-    formData.append('file', input.files[0]);
-    formData.append('pages_to_remove', pagesInput);
-    setStatus(status, 'Removing pages…', 'busy');
-    try{
-      const res = await fetch('/api/remove-pages', { method: 'POST', body: formData });
-      if (res.ok) downloadBlob(res, 'pages_removed.pdf', status); else setStatus(status, 'Something went wrong. Try again.', 'err');
-    }catch(err){ setStatus(status, 'Could not reach the server.', 'err'); }
-  });
-
-  // Extract pages
-  document.getElementById('extractForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('extractInput');
-    const start = document.getElementById('startPage').value;
-    const end = document.getElementById('endPage').value;
-    const status = document.getElementById('extractStatus');
-    if (input.files.length === 0 || !start || !end) { setStatus(status, 'Fill in the file and page range.', 'err'); return; }
-    const formData = new FormData();
-    formData.append('file', input.files[0]);
-    formData.append('start_page', start);
-    formData.append('end_page', end);
-    setStatus(status, 'Extracting pages…', 'busy');
-    try{
-      const res = await fetch('/api/extract-pages', { method: 'POST', body: formData });
-      if (res.ok) downloadBlob(res, 'extracted_pages.pdf', status); else setStatus(status, 'Something went wrong. Try again.', 'err');
-    }catch(err){ setStatus(status, 'Could not reach the server.', 'err'); }
-  });
+fetch('/api/health').then(r => r.json())
+  .then(d => {
+    document.getElementById('engineText').textContent = d.engine.toLowerCase();
+    document.getElementById('engine').classList.add('live');
+  })
+  .catch(() => { document.getElementById('engineText').textContent = 'engine offline'; });
 </script>
 
 </body>
