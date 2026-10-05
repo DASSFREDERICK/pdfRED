@@ -1,0 +1,56 @@
+---
+- name: Deploy pdfRED via Docker
+  hosts: webservers
+  become: true
+  vars:
+    app_repo: "https://github.com/DASSFREDERICK/pdfRED.git"
+    app_dir: "/home/admin/pdfRED"
+
+  tasks:
+    - name: Ensure git is installed
+      ansible.builtin.dnf:
+        name: git
+        state: present
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Clone or pull the latest pdfRED repository
+      ansible.builtin.git:
+        repo: "{{ app_repo }}"
+        dest: "{{ app_dir }}"
+        update: true
+
+    - name: Build Docker image for pdfRED
+      community.docker.docker_image:
+        name: pdfred
+        tag: latest
+        source: build
+        build:
+          path: "{{ app_dir }}"
+          tocache: true
+        state: present
+
+    - name: Stop existing container if present
+      community.docker.docker_container:
+        name: pdfred-container
+        state: absent
+
+    - name: Run pdfRED container
+      community.docker.docker_container:
+        name: pdfred-container
+        image: pdfred:latest
+        state: started
+        restart_policy: unless-stopped
+        published_ports:
+          - "8000:8000"
+
+    - name: Open port 8000 on firewalld
+      ansible.posix.firewalld:
+        port: 8000/tcp
+        permanent: true
+        state: enabled
+        immediate: true
