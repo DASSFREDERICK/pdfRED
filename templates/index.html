@@ -6,18 +6,18 @@
 <title>pdfRED — document processing console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper:#faf8f4;
     --grid:#e7e2d8;
-    --panel:#fdfcfa;
+    --panel:#ffffff;
     --panel-2:#f2efe7;
     --panel-border:#d9d2c3;
     --hairline:#e3ddd0;
-    --ink:#1b1a16;
-    --ink-soft:#5c574c;
-    --ink-faint:#928c7c;
+    --ink:#000000;
+    --ink-soft:#26241f;
+    --ink-faint:#55503f;
     --blue:#1e4d8c;      --blue-wash:#e9f0f9;
     --blue-bright:#2f6fe4;
     --red:#b23a2c;       --red-wash:#f8e9e6;
@@ -40,9 +40,9 @@
     --panel-2:#221f18;
     --panel-border:#33301f;
     --hairline:#2a2719;
-    --ink:#f2ede0;
-    --ink-soft:#b3ab96;
-    --ink-faint:#79725f;
+    --ink:#ffffff;
+    --ink-soft:#e2dccb;
+    --ink-faint:#aaa38e;
     --blue-wash:#1a2740;
     --red-wash:#3a231c;
     --teal-wash:#132c26;
@@ -75,10 +75,7 @@
     margin:0 auto;
     border-left:1px solid var(--hairline);
     border-right:1px solid var(--hairline);
-    background:
-      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/36px 36px,
-      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/36px 36px;
-    background-attachment:local;
+    background:var(--paper);
   }
   .crop{position:fixed; width:16px; height:16px; pointer-events:none; z-index:8; opacity:.65;}
   .crop::before,.crop::after{content:""; position:absolute; background:var(--ink);}
@@ -89,6 +86,8 @@
 
   a{color:inherit;}
   h1,h2,h3{text-wrap:balance;}
+  .hero h1,.ops-head h2{font-weight:700;}
+  .ops-head p,.hero-lead{font-weight:500;}
 
   /* ---------- header ---------- */
   header{
@@ -98,7 +97,7 @@
     background:var(--paper);
     opacity:.97;
     backdrop-filter:blur(10px);
-    position:sticky; top:0; z-index:6;
+    position:sticky; top:0; z-index:20;
   }
   .brand{display:flex; align-items:center; gap:14px;}
   .brand svg{display:block; color:var(--ink);}
@@ -126,7 +125,7 @@
   /* ---------- hero ---------- */
   .hero{
     display:grid; grid-template-columns:1.15fr .85fr; gap:56px; align-items:center;
-    padding:88px var(--pad-x) 92px;
+    padding:34px var(--pad-x) 38px;
     border-bottom:1px solid var(--panel-border);
   }
   .hero-eyebrow{
@@ -135,14 +134,15 @@
   }
   .hero-eyebrow::before{content:""; width:16px; height:1px; background:var(--red); display:block;}
   .hero h1{
-    font-size:clamp(36px, 4vw, 54px);
+    font-size:clamp(32px, 3.4vw, 46px);
     line-height:1.08; font-weight:600; letter-spacing:-.02em;
-    margin:0 0 18px; max-width:16ch;
+    margin:0 0 12px; max-width:none; white-space:nowrap;
   }
-  .hero-lead{font-size:16.5px; line-height:1.55; color:var(--ink-soft); max-width:46ch; margin:0 0 28px;}
+  .hero-lead{font-size:16px; line-height:1.55; color:var(--ink-soft); max-width:46ch; margin:0 0 20px;}
 
   /* -- hero command prompt -- */
-  .hero-prompt{position:relative; max-width:520px; margin-bottom:26px;}
+  .hero-prompt{position:relative; max-width:520px; margin-bottom:18px;}
+  .hero-prompt.open{z-index:15;} /* lifts the dropdown above the sticky tab bar only while it is open */
   .prompt-box{
     display:flex; align-items:center; gap:12px;
     border:1px solid var(--panel-border); background:var(--panel);
@@ -177,14 +177,27 @@
   .hero-suggest .sug .sug-title{font-weight:600; font-size:14px; flex:none;}
   .hero-suggest .sug .sug-desc{font-size:12.5px; color:var(--ink-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .hero-suggest .sug-empty{padding:16px; font-family:var(--mono); font-size:12.5px; color:var(--ink-faint);}
+  .hero-suggest .sug-head{padding:10px 16px 8px; font-family:var(--mono); font-size:11px; color:var(--ink-faint); border-bottom:1px solid var(--hairline);}
+  .nav-suggest{left:auto; right:0; width:min(460px, 86vw); top:calc(100% + 8px);}
+
+  .quick{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 20px; max-width:560px;}
+  .quick-label{font-family:var(--mono); font-size:11.5px; color:var(--ink-faint); margin-right:4px;}
+  .chip{
+    font-family:var(--mono); font-size:12px; color:var(--ink-soft); cursor:pointer;
+    background:var(--panel); border:1px solid var(--panel-border); padding:6px 11px;
+    transition:border-color .18s var(--ease), color .18s var(--ease), background .18s var(--ease);
+  }
+  .chip:hover{border-color:var(--accent); color:var(--accent); background:var(--wash);}
+  .chip:focus-visible{outline:2px solid var(--blue-bright); outline-offset:2px;}
+  #groups{scroll-margin-top:130px;}
 
   .spec-line{display:flex; flex-wrap:wrap; font-family:var(--mono); font-size:13px; color:var(--ink-soft);}
   .spec-line span{padding:0 20px; position:relative;}
   .spec-line span:first-child{padding-left:0;}
   .spec-line span+span::before{content:""; position:absolute; left:0; top:3px; bottom:3px; width:1px; background:var(--panel-border);}
 
-  .rig{position:relative; height:380px; display:flex; align-items:center; justify-content:center;}
-  .rig svg{overflow:visible;}
+  .rig{position:relative; height:240px; display:flex; align-items:center; justify-content:center;}
+  .rig svg{overflow:visible; height:230px; width:auto;}
   .mark{transform-origin:center; animation:settle 1s var(--ease) both;}
   .mark.tl{animation-delay:.05s; --dx:-18px; --dy:-14px; --dr:-10deg;}
   .mark.tr{animation-delay:.15s; --dx:18px; --dy:-14px; --dr:10deg;}
@@ -204,7 +217,7 @@
 
   /* ---------- group nav + search ---------- */
   .groupbar-outer{
-    position:sticky; top:73px; z-index:5;
+    position:sticky; top:73px; z-index:10;
     display:flex; align-items:center; gap:16px;
     border-bottom:1px solid var(--panel-border);
     background:var(--paper);
@@ -253,10 +266,65 @@
   }
 
   /* ---------- section heads ---------- */
-  .ops-head{padding:60px var(--pad-x) 0; display:flex; align-items:flex-end; justify-content:space-between; gap:32px;}
-  .ops-head h2{font-size:26px; font-weight:600; margin:0; letter-spacing:-.01em;}
-  .ops-head p{margin:8px 0 0; font-size:15px; color:var(--ink-soft); max-width:62ch;}
+  .ops-head{padding:30px var(--pad-x) 0; display:flex; align-items:flex-end; justify-content:space-between; gap:32px;}
+  .ops-head h2{font-size:22px; font-weight:600; margin:0; letter-spacing:-.01em;}
+  .ops-head p{margin:4px 0 0; font-size:15px; color:var(--ink-soft); max-width:62ch;}
   .ops-head .count{font-family:var(--mono); font-size:12px; color:var(--ink-faint); white-space:nowrap; padding-bottom:5px;}
+
+  /* ---------- tool tiles (launcher grid) ---------- */
+  .tile-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin:22px var(--pad-x) 0;}
+  .tile{
+    position:relative; text-align:left; font-family:var(--sans); color:var(--ink);
+    background:var(--panel); border:1px solid var(--panel-border);
+    padding:18px 18px 16px; min-height:132px; cursor:pointer;
+    display:flex; flex-direction:column; gap:5px;
+    transition:background .22s var(--ease), border-color .22s var(--ease), transform .22s var(--ease), box-shadow .22s var(--ease);
+  }
+  .tile:hover, .tile:focus-visible{
+    background:var(--paper); border-color:var(--accent); transform:translateY(-2px);
+    box-shadow:0 8px 22px color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+  .tile:focus-visible{outline:2px solid var(--blue-bright); outline-offset:2px;}
+  .tile::before{
+    content:""; position:absolute; left:-1px; top:-1px; bottom:-1px; width:2px; background:var(--accent);
+    transform:scaleY(0); transform-origin:top; transition:transform .32s var(--ease);
+  }
+  .tile:hover::before, .tile:focus-visible::before{transform:scaleY(1);}
+  .tile-ico{width:38px; height:38px; display:grid; place-items:center; background:var(--wash); color:var(--accent); margin-bottom:8px; transition:transform .25s var(--ease);}
+  .tile:hover .tile-ico{transform:translateY(-2px);}
+  .tile-ico svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;}
+  .tile-title{font-weight:700; font-size:17px; letter-spacing:-.005em; line-height:1.3;}
+  .tile-desc{font-size:14px; line-height:1.5; font-weight:500; color:var(--ink-soft);}
+  .tile .b{position:absolute; width:11px; height:11px; pointer-events:none;}
+  .tile .b::before,.tile .b::after{content:""; position:absolute; background:var(--panel-border); transition:background .25s var(--ease);}
+  .tile:hover .b::before,.tile:hover .b::after{background:var(--accent);}
+  .tile .b.c1{top:0;left:0;} .tile .b.c2{top:0;right:0;} .tile .b.c3{bottom:0;left:0;} .tile .b.c4{bottom:0;right:0;}
+  .tile .b::before{width:11px; height:1px;} .tile .b::after{width:1px; height:11px;}
+  .tile .b.c1::before,.tile .b.c1::after{top:0;left:0;}
+  .tile .b.c2::before,.tile .b.c2::after{top:0;right:0;}
+  .tile .b.c3::before,.tile .b.c3::after{bottom:0;left:0;}
+  .tile .b.c4::before,.tile .b.c4::after{bottom:0;right:0;}
+
+  /* ---------- tool workspace (opens when a tile is clicked) ---------- */
+  .ws{position:fixed; inset:0; z-index:50; display:none; justify-content:center; align-items:flex-start; padding:5vh 16px; overflow:auto;}
+  .ws.show{display:flex;}
+  .ws-backdrop{position:fixed; inset:0; background:color-mix(in srgb, var(--ink) 40%, transparent); backdrop-filter:blur(3px); animation:appear .2s var(--ease) both;}
+  .ws-panel{
+    position:relative; width:min(640px, 100%); margin:auto 0;
+    background:var(--panel); border:1px solid var(--panel-border);
+    box-shadow:0 24px 60px rgba(20,17,10,.3); animation:rise .3s var(--ease) both; outline:none;
+  }
+  .ws-panel.wide{width:min(920px, 100%);}
+  .ws-panel .op{background:transparent; padding:36px 32px 32px; min-height:0;}
+  .ws-panel .op:hover, .ws-panel .op:focus-within{background:transparent;}
+  .ws-close{
+    position:absolute; top:12px; right:12px; z-index:2; cursor:pointer;
+    font-family:var(--mono); font-size:12px; color:var(--ink-soft);
+    background:var(--paper); border:1px solid var(--panel-border); padding:7px 12px;
+    transition:border-color .18s var(--ease), color .18s var(--ease);
+  }
+  .ws-close:hover{border-color:var(--red); color:var(--red);}
+  .ws-close:focus-visible{outline:2px solid var(--blue-bright); outline-offset:2px;}
 
   /* ---------- tool cards ---------- */
   .ops-grid{
@@ -498,20 +566,28 @@
   @media (max-width:1180px){
     :root{--pad-x:30px;}
     .ops-grid{grid-template-columns:repeat(2, 1fr);}
+    .tile-grid{grid-template-columns:repeat(3, 1fr);}
     .op.wide{grid-column:span 2;}
   }
   @media (max-width:820px){
     :root{--pad-x:18px;}
     .hero{grid-template-columns:1fr; gap:32px; padding:52px var(--pad-x) 56px;}
-    .rig{height:250px; order:-1;}
+    .rig{display:none;}
+    .hero h1{white-space:normal;}
     .groupbar-outer{top:69px; flex-wrap:wrap; padding:10px var(--pad-x);}
     .groupbar{-webkit-overflow-scrolling:touch; order:2; flex-basis:100%;}
     .groupbar button:first-child{margin-left:0; padding-left:0;}
     .search-wrap{order:1; flex-basis:100%;}
     .search-input{width:100%;}
     .search-input:focus{width:100%;}
+    .nav-suggest{left:0; right:0; width:auto;}
     .ops-head{flex-direction:column; align-items:flex-start; gap:10px; padding-top:44px;}
     .ops-grid{grid-template-columns:1fr;}
+    .tile-grid{grid-template-columns:repeat(2, 1fr); gap:10px;}
+    .tile{padding:18px 16px 16px; min-height:140px;}
+    .ws{padding:0;}
+    .ws-panel{margin:0; min-height:100%; width:100%;}
+    .ws-panel .op{padding:52px 20px 24px;}
     .op.wide{grid-column:span 1;}
     .op{padding:26px 22px 24px;}
     .field-row{flex-direction:column; gap:0;}
@@ -522,9 +598,442 @@
     footer .stack span+span::before{display:none;}
   }
 
+  @media (max-width:420px){ .tile-grid{grid-template-columns:1fr;} }
+
   @media (prefers-reduced-motion:reduce){
     *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
     html{scroll-behavior:auto;}
+  }
+
+  /* =====================================================================
+     Vivid skin: blacker text, saturated colour, solid accents.
+     Layout, behaviour and the theme toggle are unchanged.
+     ===================================================================== */
+  :root{
+    --blue:#1f4fd8; --red:#d9202f; --teal:#00806f; --amber:#b45309;
+    --purple:#6d3fd1; --danger:#c2410c; --ok:#0f8a4f; --blue-bright:#2f6fe4;
+  }
+  :root:not([data-theme="dark"]){
+    --paper:#f3f5fb; --grid:#dfe4f1; --panel:#ffffff; --panel-2:#e8ecf7;
+    --panel-border:#aab2cc; --hairline:#d3d9ea;
+    --ink:#000000; --ink-soft:#14161f; --ink-faint:#3d4358;
+    --blue-wash:#dbe6ff; --red-wash:#ffe0e3; --teal-wash:#d0f2ec;
+    --amber-wash:#ffe8c7; --purple-wash:#e7dcfd; --danger-wash:#ffdfcd;
+  }
+  [data-theme="dark"]{
+    --paper:#0a0b12; --grid:#1d2033; --panel:#141626; --panel-2:#1c1f33;
+    --panel-border:#434a70; --hairline:#2a2f4b;
+    --ink:#ffffff; --ink-soft:#f1f2fa; --ink-faint:#b9bed6;
+    --blue-wash:#18275e; --red-wash:#4a1a22; --teal-wash:#0f3b36;
+    --amber-wash:#4a2b09; --purple-wash:#2f2063; --danger-wash:#4a2310;
+  }
+  body{font-weight:500;}
+
+  /* ---- masthead: dark in both themes so the colour pops ---- */
+  header{background:#0a0b14; border-bottom:1px solid #262a45; opacity:1;}
+  header .brand svg{color:#fff;}
+  header .brand-pdf{color:#fff;}
+  header .brand-accent{color:#ff4d5a;}
+  header .brand-sub, header .engine{color:#c4c8de;}
+  header .docs-link, header .theme-toggle{background:transparent; color:#fff; border-color:rgba(255,255,255,.4); font-weight:600;}
+  header .docs-link:hover, header .theme-toggle:hover{background:#fff; color:#000; border-color:#fff;}
+
+  .hero{
+    background:
+      radial-gradient(900px 440px at 90% 0%, rgba(109,63,209,.6), transparent 62%),
+      radial-gradient(760px 420px at 55% 115%, rgba(31,79,216,.55), transparent 62%),
+      radial-gradient(640px 380px at 0% 0%, rgba(217,32,47,.5), transparent 62%),
+      #0a0b14;
+    border-bottom:0;
+  }
+  .hero-eyebrow{color:#ff8f99; font-weight:600;} .hero-eyebrow::before{background:#ff8f99;}
+  .hero h1{color:#fff; font-weight:800;}
+  .hero-lead{color:#f0f1fa; font-weight:500;}
+  .prompt-box{background:#fff; border-color:#fff;}
+  .prompt-box svg{color:#3d4358;}
+  #heroSearch{color:#000; font-weight:500;}
+  #heroSearch::placeholder{color:#4b5168;}
+  .prompt-hint{color:#2a2e3d; border-color:#b9bed0;}
+  .prompt-box:focus-within{border-color:#ff4d5a; box-shadow:0 0 0 4px rgba(255,77,90,.4);}
+  .prompt-box:focus-within svg{color:#d9202f;}
+  .quick-label{color:#dfe2f2; font-weight:600;}
+  .chip{background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.45); color:#fff; font-weight:600;}
+  .chip:hover{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .spec-line{color:#fff;} .spec-line span+span::before{background:rgba(255,255,255,.4);}
+  .rig text{fill:#fff;} .rig .dot-confirm circle{fill:#fff;}
+  .rig .page-outline{stroke:#fff;}
+
+  /* ---- tab bar ---- */
+  .groupbar-outer{top:var(--head-h, 81px); background:var(--panel); opacity:1; box-shadow:0 6px 16px rgba(10,11,20,.12);}
+  .groupbar button{color:var(--ink); font-weight:600; border-bottom-width:4px;}
+  .groupbar button[aria-selected="true"]{border-bottom-color:var(--red);}
+  .groupbar button b{color:var(--ink-faint); font-weight:600;}
+  .search-input{background:var(--panel); border-width:2px; color:var(--ink); font-weight:500;}
+
+  /* ---- section headings colour-coded per group ---- */
+  #group-Organize{--gc:var(--red);} #group-Convert{--gc:var(--blue);}
+  #group-Secure{--gc:var(--teal);} #group-Edit{--gc:var(--purple);}
+  .ops-head h2{font-size:25px; font-weight:800;}
+  .ops-head h2::after{content:""; display:block; width:48px; height:5px; margin-top:8px; background:var(--gc, var(--red));}
+  .ops-head p{color:var(--ink-soft);}
+  .ops-head .count{color:var(--ink); font-weight:600;}
+
+  /* ---- tiles: solid colour, strong type ---- */
+  .tile{background:var(--panel); border:2px solid var(--panel-border); border-top:6px solid var(--accent);}
+  .tile::before, .tile .b{display:none;}
+  .tile-ico{background:var(--accent); color:#fff;}
+  .tile-ico svg{stroke-width:1.8;}
+  .tile-title{color:var(--ink); font-weight:800;}
+  .tile-desc{color:var(--ink-soft); font-weight:500;}
+  .tile:hover, .tile:focus-visible{
+    background:var(--accent); border-color:var(--accent); transform:translateY(-3px);
+    box-shadow:0 14px 30px color-mix(in srgb, var(--accent) 42%, transparent);
+  }
+  .tile:hover .tile-title, .tile:hover .tile-desc, .tile:focus-visible .tile-title, .tile:focus-visible .tile-desc{color:#fff;}
+  .tile:hover .tile-ico, .tile:focus-visible .tile-ico{background:#fff; color:var(--accent);}
+
+  /* ---- search suggestions + tags ---- */
+  .hero-suggest{border-width:2px; border-color:var(--ink);}
+  .hero-suggest .sug .sug-tag, .op-tag{color:#fff; background:var(--accent, var(--red)); font-weight:600;}
+  .hero-suggest .sug .sug-title{font-weight:700;}
+  .hero-suggest .sug .sug-desc{color:var(--ink-soft);}
+  .hero-suggest .sug:hover, .hero-suggest .sug.active{background:var(--panel-2);}
+
+  /* ---- tool workspace ---- */
+  .ws-panel{border:2px solid var(--ink);}
+  .ws-panel .op{border-top:7px solid var(--accent);}
+  .op h3{font-size:23px; font-weight:800;}
+  .op p.desc{color:var(--ink-soft);}
+  .ws-close{color:var(--ink); border-width:2px; font-weight:600;}
+  .drop{border:2px dashed var(--accent); background:var(--wash);}
+  .drop:hover{background:color-mix(in srgb, var(--accent) 16%, var(--panel));}
+  .drop-inner svg{color:var(--accent);}
+  .drop-label, .drop-label b{color:var(--ink); font-weight:600;}
+  .drop-label b{font-weight:800;}
+  .field{border-width:2px; background:var(--panel); color:var(--ink); font-weight:500;}
+  .field-label{color:var(--ink); font-weight:600;}
+  .field:hover{border-color:var(--ink);}
+  .check-wrap{color:var(--ink); font-weight:500;}
+  .file-chip{color:var(--ink); font-weight:600;}
+  .run-btn{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700;}
+  .run-btn:hover:not([disabled]){
+    background:color-mix(in srgb, var(--accent) 80%, #000); border-color:color-mix(in srgb, var(--accent) 80%, #000);
+    box-shadow:0 8px 20px color-mix(in srgb, var(--accent) 38%, transparent);
+  }
+  .op-status{color:var(--ink); font-weight:600;}
+  .op-status.ok{color:var(--ok);} .op-status.err{color:var(--danger);} .op-status.busy{color:var(--blue);}
+  footer{color:var(--ink-soft); font-weight:600;}
+
+  @media (max-width:820px){
+    header{padding:14px var(--pad-x); gap:12px;}
+    header .engine, header .brand-sub{display:none;}
+    header .docs-link, header .theme-toggle{padding:8px 11px;}
+  }
+
+  /* =====================================================================
+     Enterprise skin: neutral slate, one blue accent, soft radii, quiet depth.
+     Overrides the vivid skin above; markup and behaviour are unchanged.
+     ===================================================================== */
+  :root{
+    --sans:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --blue:#1d4ed8; --blue-bright:#2563eb; --brand:#e0313f; --red:#e0313f; --teal:#0f766e; --amber:#a16207;
+    --purple:#6d28d9; --danger:#b91c1c; --ok:#15803d;
+    --r:8px; --r-sm:6px;
+    --shadow-1:0 1px 2px rgba(15,23,42,.06), 0 1px 1px rgba(15,23,42,.04);
+    --shadow-2:0 4px 14px rgba(15,23,42,.08), 0 1px 3px rgba(15,23,42,.06);
+  }
+  :root:not([data-theme="dark"]){
+    --paper:#f6f7f9; --grid:#e5e8ee; --panel:#ffffff; --panel-2:#f1f3f6;
+    --panel-border:#dde1e8; --hairline:#e8ebf0;
+    --ink:#0f172a; --ink-soft:#3a2a2e; --ink-faint:#64748b;
+    --blue-wash:#e8effd; --red-wash:#fdebed; --teal-wash:#e2f3f1;
+    --amber-wash:#faf1dc; --purple-wash:#efe9fb; --danger-wash:#fbe9e9;
+  }
+  [data-theme="dark"]{
+    --paper:#0b0f17; --grid:#161c28; --panel:#121823; --panel-2:#1a2230;
+    --panel-border:#263043; --hairline:#1e2736;
+    --ink:#f1f5f9; --ink-soft:#cbd5e1; --ink-faint:#9a8d90;
+    --blue-wash:#16264a; --red-wash:#3a1418; --teal-wash:#10302d;
+    --amber-wash:#3a2a0c; --purple-wash:#251b45; --danger-wash:#3a1717;
+    --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 6px 18px rgba(0,0,0,.45);
+  }
+  body{font-weight:400; letter-spacing:-.003em;}
+  ::selection{background:var(--red-wash); color:var(--red);}
+  .crop{display:none;}
+  .sheet{border-left:0; border-right:0; background:transparent;}
+
+  /* ---- masthead ---- */
+  header{background:#0d0a0b; border-bottom:1px solid #2a1c1f; padding:14px var(--pad-x);}
+  .brand-name{font-weight:600; font-size:18px; letter-spacing:0;}
+  header .brand-accent{color:#ff5a64;}
+  header .brand-sub{color:#a89a9d; font-family:var(--sans); font-size:11.5px;}
+  header .engine{color:#a89a9d; font-family:var(--sans); font-size:12px;}
+  header .docs-link, header .theme-toggle{
+    font-family:var(--sans); font-size:13px; font-weight:500; border-radius:var(--r-sm);
+    border-color:#3a2a2e; color:#f1e8e9; padding:7px 13px;
+  }
+  header .docs-link:hover, header .theme-toggle:hover{background:#2a1c1f; color:#fff; border-color:#5a444a;}
+
+  /* ---- hero ---- */
+  .hero{
+    background:#0d0a0b; grid-template-columns:1.15fr .85fr; gap:48px; padding:48px var(--pad-x) 44px;
+    border-bottom:1px solid #2a1c1f;
+  }
+  .hero-eyebrow{font-family:var(--sans); font-size:12.5px; font-weight:500; color:#9a8d90;} .hero-eyebrow::before{background:#9a8d90;}
+  .rig{height:260px;}
+  .hero h1{font-size:clamp(32px,3.4vw,44px); font-weight:600; letter-spacing:-.025em; color:#ffffff; margin-bottom:14px;}
+  .hero-lead{color:#c4b7ba; font-weight:400; font-size:17px; max-width:56ch; margin-bottom:28px;}
+  .hero-prompt{max-width:620px; margin-bottom:18px;}
+  .prompt-box{background:#fff; border:1px solid #fff; border-radius:var(--r); padding:14px 16px; box-shadow:0 8px 28px rgba(0,0,0,.35);}
+  .prompt-box:focus-within{border-color:#ff7a84; box-shadow:0 0 0 4px rgba(255,90,100,.38), 0 8px 28px rgba(0,0,0,.35);}
+  .prompt-box:focus-within svg{color:var(--brand);}
+  #heroSearch{color:#0f172a; font-weight:400;}
+  .prompt-hint{border-radius:4px; font-family:var(--sans); color:#64748b; border-color:#dbe0e8;}
+  .quick-label{font-family:var(--sans); color:#9a8d90; font-weight:500;}
+  .chip{font-family:var(--sans); font-size:12.5px; font-weight:500; border-radius:999px; padding:5px 13px;
+        background:rgba(255,255,255,.06); border-color:#3a2a2e; color:#efe6e7;}
+  .chip:hover{background:#fff; border-color:#fff; color:#0f172a;}
+  .spec-line{font-family:var(--sans); font-size:13px; color:#9a8d90;}
+  .spec-line span+span::before{background:#3a2a2e;}
+
+  /* ---- suggestions ---- */
+  .hero-suggest{border:1px solid var(--panel-border); border-radius:var(--r); box-shadow:var(--shadow-2); overflow:auto;}
+  .hero-suggest .sug .sug-tag, .op-tag{border-radius:4px; font-family:var(--sans); font-weight:500; letter-spacing:0; font-size:11px;
+        color:var(--accent, var(--red)); background:var(--wash, var(--red-wash));}
+  .hero-suggest .sug .sug-title{font-weight:600;}
+  .hero-suggest .sug-head, .hero-suggest .sug-empty{font-family:var(--sans);}
+
+  /* ---- tab bar ---- */
+  .groupbar-outer{background:var(--panel); box-shadow:none; border-bottom:1px solid var(--panel-border);}
+  .groupbar button{font-family:var(--sans); font-size:14px; font-weight:500; color:var(--ink-faint); border-bottom-width:2px; padding:15px 16px;}
+  .groupbar button:hover{color:var(--ink); background:transparent;}
+  .groupbar button[aria-selected="true"]{color:var(--ink); font-weight:600; border-bottom-color:var(--brand);}
+  .groupbar button b{font-weight:400; font-size:12px; background:var(--panel-2); border-radius:999px; padding:1px 7px; margin-left:8px;}
+  .search-input{font-family:var(--sans); font-size:13.5px; font-weight:400; border-width:1px; border-radius:var(--r-sm); background:var(--paper);}
+  .search-input:focus{border-color:var(--brand); box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);}
+
+  /* ---- section heads ---- */
+  .ops-head{padding-top:40px;}
+  .ops-head h2{font-size:22px; font-weight:600; letter-spacing:-.015em;}
+  .ops-head h2::after{display:none;}
+  .ops-head p{color:var(--ink-faint); font-size:14.5px; font-weight:400;}
+  .ops-head .count{font-family:var(--sans); font-size:12.5px; font-weight:500; color:var(--ink-faint);}
+
+  /* ---- tiles ---- */
+  .tile-grid{gap:16px; margin-top:20px;}
+  .tile{
+    background:var(--panel); border:1px solid var(--panel-border); border-top:1px solid var(--panel-border);
+    border-radius:10px; padding:20px; min-height:128px; box-shadow:var(--shadow-1); gap:4px;
+  }
+  .tile-ico{width:36px; height:36px; border-radius:8px; background:var(--wash); color:var(--accent); margin-bottom:10px;}
+  .tile-ico svg{stroke-width:1.6;}
+  .tile-title{font-weight:600; font-size:15.5px; color:var(--ink);}
+  .tile-desc{font-weight:400; font-size:13.5px; color:var(--ink-faint);}
+  .tile:hover, .tile:focus-visible{
+    background:var(--panel); border-color:color-mix(in srgb, var(--accent) 55%, var(--panel-border));
+    transform:translateY(-1px); box-shadow:var(--shadow-2);
+  }
+  .tile:hover .tile-title, .tile:focus-visible .tile-title{color:var(--ink);}
+  .tile:hover .tile-desc, .tile:focus-visible .tile-desc{color:var(--ink-soft);}
+  .tile:hover .tile-ico, .tile:focus-visible .tile-ico{background:var(--wash); color:var(--accent); transform:none;}
+  .tile:focus-visible, .chip:focus-visible, .groupbar button:focus-visible{outline:2px solid var(--brand); outline-offset:2px;}
+
+  /* ---- workspace dialog ---- */
+  .ws-backdrop{background:rgba(8,12,22,.55); backdrop-filter:blur(2px);}
+  .ws-panel{border:1px solid var(--panel-border); border-radius:12px; box-shadow:0 24px 64px rgba(8,12,22,.35); overflow:hidden;}
+  .ws-panel .op{border-top:3px solid var(--accent); padding:34px 32px 30px;}
+  .ws-close{font-family:var(--sans); font-size:12.5px; font-weight:500; border-width:1px; border-radius:var(--r-sm); color:var(--ink-soft);}
+  .ws-close:hover{border-color:var(--ink-faint); color:var(--ink);}
+  .op h3{font-size:21px; font-weight:600; letter-spacing:-.015em;}
+  .op p.desc{color:var(--ink-faint); font-size:14.5px;}
+  .op .b{display:none;}
+  .op::before{display:none;}
+
+  /* ---- form controls ---- */
+  .drop{border:1.5px dashed var(--panel-border); border-radius:var(--r); background:var(--paper); padding:22px 18px;}
+  .drop:hover{border-color:var(--accent); background:var(--wash);}
+  .drop.drag{box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);}
+  .drop-label{font-size:14px; color:var(--ink-faint);}
+  .drop-label, .drop-label b{font-weight:400;} .drop-label b{font-weight:600; color:var(--ink);}
+  .file-chip{font-family:var(--sans); font-size:13px; font-weight:500; border-radius:var(--r-sm);}
+  .preview-box{border-radius:var(--r); background:var(--paper);}
+  .preview-label, .field-label{font-family:var(--sans); font-size:12.5px; font-weight:500; color:var(--ink-soft); letter-spacing:0;}
+  .field{font-family:var(--sans); font-size:14px; font-weight:400; border-width:1px; border-radius:var(--r-sm); background:var(--panel); padding:10px 12px;}
+  .field:hover{border-color:var(--ink-faint);}
+  .field:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);}
+  .check-wrap{font-weight:400;}
+  .sortlist, .pagegrid, .result{border-radius:var(--r);}
+  .sortlist li, .result{font-family:var(--sans);}
+  .run-btn{font-family:var(--sans); font-size:14px; font-weight:600; border-radius:var(--r-sm); letter-spacing:0;}
+  .run-btn:hover:not([disabled]){box-shadow:var(--shadow-2);}
+  .op-status{font-family:var(--sans); font-size:13px; font-weight:500; border-radius:var(--r-sm);}
+
+  /* ---- footer ---- */
+  footer{margin-top:72px; font-family:var(--sans); font-size:12.5px; font-weight:400; color:var(--ink-faint); background:var(--panel);}
+  .sheet footer{border-top:1px solid var(--panel-border);}
+  @media (max-width:820px){ .hero{grid-template-columns:1fr; gap:24px; padding:36px var(--pad-x) 40px;} }
+
+  /* ---- v2: bigger hero, crimson brand accent, atmosphere ---- */
+  .hero{
+    grid-template-columns:1.02fr .98fr; gap:40px; align-items:center; padding:64px var(--pad-x) 60px; min-height:560px;
+    background:
+      radial-gradient(720px 480px at 76% 48%, rgba(224,49,63,.30), transparent 66%),
+      radial-gradient(520px 320px at 0% 100%, rgba(224,49,63,.10), transparent 70%),
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px) 0 0/44px 44px,
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0/44px 44px,
+      #0d0a0b;
+  }
+  .hero h1{font-size:clamp(38px,4.4vw,62px); line-height:1.04; letter-spacing:-.035em; white-space:normal; max-width:12ch; margin-bottom:18px;}
+  .hero-lead{font-size:18px; max-width:46ch;}
+  .hero-eyebrow{color:#ff7a84;} .hero-eyebrow::before{background:#ff7a84;}
+  .rig{height:auto; justify-content:center;}
+  .rig svg{width:100%; max-width:500px; height:auto; overflow:visible; filter:drop-shadow(0 30px 40px rgba(0,0,0,.5));}
+  .glow{animation:glow 6s ease-in-out infinite;} @keyframes glow{50%{opacity:.65;}}
+  .pg{transform-box:fill-box; transform-origin:50% 90%;}
+  .pg-l{animation:fanL 1.2s var(--ease) .25s both;}
+  .pg-r{animation:fanR 1.2s var(--ease) .25s both;}
+  @keyframes fanL{from{transform:none; opacity:0;} to{transform:translateX(-36px) rotate(-8deg); opacity:1;}}
+  @keyframes fanR{from{transform:none; opacity:0;} to{transform:translateX(36px) rotate(7deg); opacity:1;}}
+  .front{animation:frontIn .9s var(--ease) both;}
+  @keyframes frontIn{from{opacity:0; transform:translateY(18px);} to{opacity:1; transform:none;}}
+  .ln{transform-box:fill-box; transform-origin:left center; animation:lnIn .7s var(--ease) both; animation-delay:calc(.7s + var(--i) * .08s);}
+  @keyframes lnIn{from{transform:scaleX(0);} to{transform:scaleX(1);}}
+  .hl{transform-box:fill-box; transform-origin:left center; animation:hlx 5s ease-in-out 1.8s infinite;}
+  @keyframes hlx{0%,24%{transform:scaleX(0); opacity:1;} 36%{transform:scaleX(1);} 88%{transform:scaleX(1); opacity:1;} 100%{transform:scaleX(1); opacity:0;}}
+  .beam{animation:beamy 5s cubic-bezier(.45,0,.55,1) 1.8s infinite;}
+  @keyframes beamy{0%{transform:translateY(0); opacity:0;} 8%{opacity:1;} 92%{opacity:1;} 100%{transform:translateY(300px); opacity:0;}}
+  .cm{animation:cmIn .8s var(--ease) 1s both;} @keyframes cmIn{from{opacity:0;} to{opacity:1;}}
+  .bdg{animation:bdgIn .7s var(--ease) var(--d) both;}
+  @keyframes bdgIn{from{opacity:0; transform:translateY(12px) scale(.96);} to{opacity:1; transform:none;}}
+  .bob{animation:bobx 6s ease-in-out infinite;} @keyframes bobx{50%{transform:translateY(-7px);}}
+  .rig text{font-family:var(--sans); font-size:13px; font-weight:500; fill:#f3eaec;}
+
+  /* ---- v3: warm red-black dark theme + cinematic tool dialog ---- */
+  [data-theme="dark"]{
+    --paper:#0d0a0b; --grid:#1a1315; --panel:#151012; --panel-2:#1d1517;
+    --panel-border:#33242a; --hairline:#291c21;
+    --ink:#f7eff1; --ink-soft:#d8cbce; --ink-faint:#9b8b90;
+    --blue-wash:#1b2342; --red-wash:#3d1519; --teal-wash:#10302c;
+    --amber-wash:#3a2a0e; --purple-wash:#2a1d4a; --danger-wash:#3d1c12;
+    --shadow-1:0 1px 2px rgba(0,0,0,.5); --shadow-2:0 10px 28px rgba(0,0,0,.55);
+  }
+  [data-theme="dark"] body{background:radial-gradient(1100px 560px at 88% 0%, rgba(224,49,63,.09), transparent 70%) no-repeat, var(--paper);}
+  [data-theme="dark"] .tile{background:linear-gradient(180deg,#181113,#130e10);}
+  [data-theme="dark"] .tile:hover, [data-theme="dark"] .tile:focus-visible{background:linear-gradient(180deg,#1d1417,#150f11); box-shadow:0 10px 30px color-mix(in srgb, var(--accent) 22%, transparent);}
+  [data-theme="dark"] .groupbar-outer{background:rgba(21,16,18,.92);}
+  [data-theme="dark"] footer{background:#100b0d;}
+
+  /* ---- v4: simple, clean tool dialog (follows light/dark theme) ---- */
+  .ws-backdrop{background:rgba(10,8,9,.5); backdrop-filter:blur(4px);}
+  .ws-panel{
+    width:min(600px,100%); background:var(--panel); border:1px solid var(--panel-border); border-radius:14px;
+    box-shadow:0 20px 60px rgba(10,8,9,.35); overflow:hidden; animation:popIn .25s var(--ease) both;
+  }
+  .ws-panel.wide{width:min(900px,100%);}
+  @keyframes popIn{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;}}
+  .ws-panel .op.op{--accent:var(--brand); --wash:var(--red-wash); border-top:3px solid var(--brand); padding:40px 32px 30px;}
+  .ws-panel .op-tag{background:var(--red-wash); color:var(--red); border-radius:6px; padding:4px 10px; font-weight:600; letter-spacing:0;}
+  [data-theme="dark"] .ws-panel .op-tag{color:#ff8a93;}
+  .ws-panel .op h3{font-size:26px; font-weight:600; letter-spacing:-.02em; color:var(--ink);}
+  .ws-panel .op p.desc{font-size:15px; color:var(--ink-faint);}
+  .ws-panel .ws-close{top:14px; right:14px; background:var(--panel-2); border:1px solid var(--panel-border); border-radius:8px; color:var(--ink-soft);}
+  .ws-panel .ws-close:hover{border-color:var(--brand); color:var(--brand); background:var(--panel-2);}
+  .ws-panel .drop{border:1.5px dashed var(--panel-border); border-radius:12px; padding:28px 18px; background:var(--paper); animation:none;}
+  .ws-panel .drop:hover, .ws-panel .drop.drag{border-color:var(--brand); background:var(--red-wash); box-shadow:none;}
+  .ws-panel .drop.loaded{border-style:solid; border-color:var(--brand);}
+  .ws-panel .drop-inner{justify-content:center; gap:12px;}
+  .ws-panel .drop-inner svg{color:var(--brand);}
+  .ws-panel .field{border-radius:10px; padding:11px 13px; background:var(--paper);}
+  .ws-panel .field:focus{border-color:var(--brand); box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);}
+  .ws-panel .run-btn{min-height:48px; border:0; border-radius:10px; background:var(--brand); color:#fff; font-size:15px; font-weight:600; box-shadow:none;}
+  .ws-panel .run-btn:hover:not([disabled]){background:color-mix(in srgb, var(--brand) 86%, #000); box-shadow:none;}
+  .ws-panel .run-btn[disabled]{opacity:.55;}
+  .ws-panel .file-chip, .ws-panel .sortlist, .ws-panel .pagegrid, .ws-panel .preview-box, .ws-panel .result{border-radius:10px;}
+
+  /* ---- phones ---- */
+  @media (max-width:820px){
+    .hero{min-height:0;}
+    .ws-panel{border-radius:0; border:0; min-height:100vh; min-height:100dvh; width:100%;}
+    .ws-panel .op.op{padding:64px 20px calc(24px + env(safe-area-inset-bottom, 0px));}
+    .ws-panel .op h3{font-size:24px;}
+    .ws-panel .ws-close{min-height:40px; padding:8px 14px;}
+    .ws-panel .field, #heroSearch, .search-input{font-size:16px;}
+    .ws-panel .run-btn{min-height:50px;}
+  }
+
+  /* ---- v3: dark mode goes red/black, brighter tiles ---- */
+  [data-theme="dark"]{
+    --paper:#0d0a0b; --grid:#1c1416; --panel:#1d1517; --panel-2:#2a1e21;
+    --panel-border:#402d33; --hairline:#2d2125;
+    --ink:#f7f0f1; --ink-soft:#ddd0d3; --ink-faint:#a89a9e;
+    --red-wash:#431a20; --blue-wash:#1b2a52; --teal-wash:#12363a; --amber-wash:#402d10; --purple-wash:#2f2252; --danger-wash:#41200f;
+  }
+  [data-theme="dark"] body{
+    background:
+      radial-gradient(900px 520px at 88% 0%, rgba(224,49,63,.10), transparent 62%),
+      radial-gradient(700px 480px at 0% 60%, rgba(224,49,63,.06), transparent 65%),
+      var(--paper);
+    background-repeat:no-repeat;
+  }
+  [data-theme="dark"] .groupbar-outer{background:#140e10;}
+  [data-theme="dark"] .tile{
+    background:linear-gradient(180deg, #2c2024, #251a1d); border-color:#4a363d;
+    box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 6px 16px rgba(0,0,0,.35);
+  }
+  [data-theme="dark"] .tile:hover, [data-theme="dark"] .tile:focus-visible{
+    background:linear-gradient(180deg, #35262b, #2d2024);
+    border-color:var(--accent); box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 10px 26px rgba(0,0,0,.45);
+  }
+  [data-theme="dark"] .tile-ico{background:color-mix(in srgb, var(--accent) 24%, #2c2024); color:color-mix(in srgb, var(--accent) 70%, #fff);}
+  [data-theme="dark"] .tile-title{color:#fff;}
+  [data-theme="dark"] .tile-desc{color:#c3b5b9;}
+  [data-theme="dark"] .groupbar button b{background:#2a1e21;}
+  [data-theme="dark"] footer{background:#140e10;}
+
+  /* ---- v4: softer, rounder cards with circular icon badges ---- */
+  .tile{border-radius:14px; padding:22px; box-shadow:0 2px 10px rgba(15,23,42,.05);}
+  .tile-ico{width:44px; height:44px; border-radius:50%; margin-bottom:12px;}
+  .tile-title{font-weight:700;}
+  .tile:hover, .tile:focus-visible{box-shadow:0 8px 24px rgba(15,23,42,.10); transform:translateY(-2px);}
+  .tile-desc{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  [data-theme="dark"] .tile{border-radius:14px;}
+
+  /* ---- v5: responsive by device (CSS media queries pick the layout automatically) ---- */
+  @media (max-width:1180px){
+    .hero{grid-template-columns:1.1fr .9fr; gap:24px; min-height:0; padding:48px var(--pad-x);}
+    .hero h1{font-size:clamp(34px,5vw,50px);}
+    .rig svg{max-width:400px;}
+  }
+  @media (max-width:820px){
+    .hero{grid-template-columns:1fr; gap:20px; min-height:0; padding:34px var(--pad-x) 38px;}
+    .hero h1{max-width:none; font-size:clamp(32px,9vw,42px);}
+    .hero-lead{font-size:16px; margin-bottom:22px;}
+    .hero-prompt{max-width:none;}
+    .quick{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin-right:calc(-1 * var(--pad-x)); padding-right:var(--pad-x);}
+    .quick::-webkit-scrollbar{display:none;}
+    .quick .chip, .quick-label{flex:none; white-space:nowrap;}
+    .spec-line{font-size:12px;} .spec-line span{padding:0 12px;}
+    header{padding:12px var(--pad-x);}
+    .brand-name{font-size:17px;}
+    .groupbar button{padding:13px 14px; font-size:14px;}
+    .tile-grid{grid-template-columns:repeat(2,1fr); gap:12px; margin:16px var(--pad-x) 0;}
+    .tile{padding:16px; min-height:0; border-radius:12px;}
+    .tile-ico{width:38px; height:38px; margin-bottom:10px;}
+    .tile-title{font-size:15px;} .tile-desc{font-size:13px;}
+    .ops-head{padding-top:30px;}
+    .ws-panel, [data-theme="dark"] .ws-panel{border-radius:0; border-width:0;}
+    .field, .search-input, #heroSearch, select.field{font-size:16px;}
+    .run-btn{min-height:46px;}
+    footer{margin-top:48px; padding-bottom:calc(32px + env(safe-area-inset-bottom, 0px));}
+  }
+  @media (max-width:420px){ .tile-grid{grid-template-columns:1fr;} .hero h1{font-size:32px;} }
+
+  /* touch devices: no sticky hover effects, press feedback instead, bigger tap targets */
+  @media (hover:none) and (pointer:coarse){
+    .tile:hover{transform:none; box-shadow:0 2px 10px rgba(15,23,42,.05);}
+    .tile:active{transform:scale(.98); border-color:var(--accent);}
+    .chip{padding:8px 14px;}
+    .rig *{animation-play-state:running;}
   }
 </style>
 </head>
@@ -538,7 +1047,7 @@
     <div class="brand">
       <svg width="30" height="30" viewBox="0 0 26 26" fill="none" aria-hidden="true">
         <rect x="3" y="3" width="20" height="20" stroke="currentColor" stroke-width="1.3"/>
-        <path d="M3 3v5M3 3h5M23 3v5M23 3h-5M3 23v-5M3 23h5M23 23v-5M23 23h-5" stroke="#b23a2c" stroke-width="1.4"/>
+        <path d="M3 3v5M3 3h5M23 3v5M23 3h-5M3 23v-5M3 23h5M23 23v-5M23 23h-5" stroke="#ff4d5a" stroke-width="1.4"/>
       </svg>
       <div>
         <div class="brand-name"><span class="brand-pdf">pdf</span><span class="brand-accent">RED</span></div>
@@ -556,17 +1065,18 @@
 
   <section class="hero">
     <div>
-      <p class="hero-eyebrow">31 operations, one file at a time</p>
+      <p class="hero-eyebrow" id="eyebrow">one file at a time</p>
       <h1>Every page, precisely handled.</h1>
-      <p class="hero-lead">Tell us what you're trying to do, and we'll point you to the right tool — or browse everything below.</p>
+      <p class="hero-lead">Type what you want to do, like merge, make smaller or convert to Word, and we'll take you to the right tool.</p>
       <div class="hero-prompt">
         <div class="prompt-box">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.8" cy="6.8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M10.6 10.6L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-          <input type="search" id="heroSearch" placeholder="What do you want to do today?" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="heroSuggest">
+          <input type="search" id="heroSearch" placeholder="What do you want to do? e.g. make a PDF smaller" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="heroSuggest">
           <span class="prompt-hint">↵</span>
         </div>
         <div class="hero-suggest" id="heroSuggest" role="listbox"></div>
       </div>
+      <div class="quick" id="quick" aria-label="Quick start"></div>
       <div class="spec-line">
         <span id="toolCount">tools</span>
         <span>Files up to {{ max_upload_mb }} MB</span>
@@ -574,17 +1084,45 @@
       </div>
     </div>
     <div class="rig">
-      <svg width="280" height="340" viewBox="0 0 260 320" aria-hidden="true">
-        <rect class="page-outline" x="40" y="20" width="180" height="240" rx="1" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.4"/>
-        <line class="scanbeam" x1="42" y1="22" x2="218" y2="22" stroke="#2f6fe4" stroke-width="1.2"/>
-        <g class="mark tl" transform="translate(28,10)"><path d="M0 0 L18 0 M0 0 L0 18" stroke="#1e4d8c" stroke-width="1.6"/><circle r="2.6" fill="#1e4d8c"/></g>
-        <g class="mark tr" transform="translate(232,10)"><path d="M0 0 L-18 0 M0 0 L0 18" stroke="#b23a2c" stroke-width="1.6"/><circle r="2.6" fill="#b23a2c"/></g>
-        <g class="mark bl" transform="translate(28,270)"><path d="M0 0 L18 0 M0 0 L0 -18" stroke="#95610a" stroke-width="1.6"/><circle r="2.6" fill="#95610a"/></g>
-        <g class="mark br" transform="translate(232,270)"><path d="M0 0 L-18 0 M0 0 L0 -18" stroke="#12756a" stroke-width="1.6"/><circle r="2.6" fill="#12756a"/></g>
-        <g class="dot-confirm" transform="translate(128,292)">
-          <circle r="3" fill="var(--ink)"/>
-          <text x="11" y="4" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-soft)">aligned</text>
+      <svg viewBox="0 0 480 460" aria-hidden="true">
+        <defs>
+          <radialGradient id="rg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#e0313f" stop-opacity=".45"/><stop offset="1" stop-color="#e0313f" stop-opacity="0"/></radialGradient>
+          <linearGradient id="bm" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#e0313f" stop-opacity="0"/><stop offset=".5" stop-color="#ff5a64"/><stop offset="1" stop-color="#e0313f" stop-opacity="0"/></linearGradient>
+          <linearGradient id="bw" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e0313f" stop-opacity="0"/><stop offset="1" stop-color="#e0313f" stop-opacity=".26"/></linearGradient>
+        </defs>
+        <circle class="glow" cx="240" cy="230" r="215" fill="url(#rg)"/>
+        <rect class="pg pg-l" x="120" y="60" width="240" height="320" rx="10" fill="#1b1416" stroke="#fff" stroke-opacity=".16"/>
+        <rect class="pg pg-r" x="120" y="60" width="240" height="320" rx="10" fill="#241a1d" stroke="#fff" stroke-opacity=".2"/>
+        <g class="front">
+          <rect x="120" y="60" width="240" height="320" rx="10" fill="#fbfbfc"/>
+          <rect x="144" y="86" width="18" height="18" rx="4" fill="#e0313f"/>
+          <rect class="ln" style="--i:0" x="170" y="90" width="96" height="10" rx="3" fill="#18181b"/>
+          <rect class="hl" x="140" y="155" width="200" height="16" rx="3" fill="#e0313f" fill-opacity=".22"/>
+          <rect class="ln" style="--i:1" x="144" y="128" width="192" height="6" rx="3" fill="#d5d9e1"/>
+          <rect class="ln" style="--i:2" x="144" y="144" width="176" height="6" rx="3" fill="#d5d9e1"/>
+          <rect class="ln" style="--i:3" x="144" y="160" width="192" height="6" rx="3" fill="#c3c8d2"/>
+          <rect class="ln" style="--i:4" x="144" y="176" width="120" height="6" rx="3" fill="#d5d9e1"/>
+          <rect x="144" y="202" width="192" height="84" rx="6" fill="#eceef2"/>
+          <path d="M144 286 196 236 232 266 262 226 336 286Z" fill="#d3d7df"/>
+          <circle cx="312" cy="226" r="9" fill="#e0313f" fill-opacity=".85"/>
+          <rect class="ln" style="--i:5" x="144" y="304" width="192" height="6" rx="3" fill="#d5d9e1"/>
+          <rect class="ln" style="--i:6" x="144" y="320" width="150" height="6" rx="3" fill="#d5d9e1"/>
+          <rect class="ln" style="--i:7" x="144" y="336" width="172" height="6" rx="3" fill="#d5d9e1"/>
+          <rect class="ln" style="--i:8" x="144" y="352" width="96" height="6" rx="3" fill="#d5d9e1"/>
         </g>
+        <g transform="translate(0,64)"><g class="beam">
+          <rect x="120" y="-34" width="240" height="34" fill="url(#bw)"/>
+          <rect x="106" y="-1.5" width="268" height="3" fill="url(#bm)"/>
+        </g></g>
+        <g class="cm" fill="none" stroke="#ff5a64" stroke-width="1.8" stroke-linecap="round">
+          <path d="M96 56v-20h20M384 56v-20h-20M96 384v20h20M384 384v20h-20"/>
+        </g>
+        <g transform="translate(300,34)"><g class="bdg" style="--d:1.5s"><g class="bob">
+          <rect width="156" height="36" rx="18" fill="#161012" fill-opacity=".92" stroke="#fff" stroke-opacity=".18"/><circle cx="18" cy="18" r="4.5" fill="#34d399"/><text x="32" y="22.5">Text layer added</text></g></g></g>
+        <g transform="translate(8,176)"><g class="bdg" style="--d:1.8s"><g class="bob" style="animation-delay:-2s">
+          <rect width="140" height="36" rx="18" fill="#161012" fill-opacity=".92" stroke="#fff" stroke-opacity=".18"/><circle cx="18" cy="18" r="4.5" fill="#34d399"/><text x="32" y="22.5">3 files merged</text></g></g></g>
+        <g transform="translate(300,330)"><g class="bdg" style="--d:2.1s"><g class="bob" style="animation-delay:-4s">
+          <rect width="148" height="36" rx="18" fill="#161012" fill-opacity=".92" stroke="#fff" stroke-opacity=".18"/><circle cx="18" cy="18" r="4.5" fill="#34d399"/><text x="32" y="22.5">78% smaller</text></g></g></g>
       </svg>
     </div>
   </section>
@@ -593,12 +1131,12 @@
     <div class="groupbar" id="groupbar" role="tablist"></div>
     <div class="search-wrap">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.8" cy="6.8" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M10.6 10.6L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      <input type="search" id="toolSearch" class="search-input" placeholder="Filter the grid below…" aria-label="Filter tools" autocomplete="off">
+      <input type="search" id="toolSearch" class="search-input" placeholder="Find a tool…" aria-label="Find a tool" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="navSuggest">
+      <div class="hero-suggest nav-suggest" id="navSuggest" role="listbox"></div>
     </div>
   </nav>
 
   <main id="groups"></main>
-  <div id="noResults"></div>
 
   <footer>
     <span><span class="brand-pdf">pdf</span><span class="brand-accent">RED</span> — document processing console</span>
@@ -608,6 +1146,15 @@
   </footer>
 
 </div>
+
+<div class="ws" id="ws" role="dialog" aria-modal="true" aria-label="Tool">
+  <div class="ws-backdrop" id="wsBackdrop"></div>
+  <div class="ws-panel" id="wsPanel" tabindex="-1">
+    <button type="button" class="ws-close" id="wsClose">Close · Esc</button>
+    <div id="wsBody"></div>
+  </div>
+</div>
+<div id="shelf" hidden></div>
 
 <script>
 /* ------------------------------------------------------------------ *
@@ -953,160 +1500,340 @@ function buildCard(tool, index) {
   return card;
 }
 
-GROUPS.forEach(([name, blurb], gi) => {
+/* ------------------------------------------------------------------ *
+ * Group tabs: All, plus one per group. A tab shows only that group.   *
+ * ------------------------------------------------------------------ */
+const ICONS = {
+  'Merge PDF':'<rect x="3" y="3" width="11" height="11"/><rect x="10" y="10" width="11" height="11"/>',
+  'Split PDF':'<path d="M6 3h12v18H6z"/><path d="M12 3v18" stroke-dasharray="2 2"/>',
+  'Extract pages':'<path d="M5 3h10v18H5z"/><path d="M12 12h9m-3-3l3 3-3 3"/>',
+  'Remove pages':'<path d="M6 3h12v18H6z"/><path d="M9.5 10l5 5m0-5l-5 5"/>',
+  'Organise pages':'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
+  'Rotate PDF':'<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/>',
+  'Compress PDF':'<path d="M4 4l6 6m0-4v4H6"/><path d="M20 20l-6-6m0 4v-4h4"/>',
+  'Repair PDF':'<path d="M6 3h12v18H6z"/><path d="M12 9v6m-3-3h6"/>',
+  'PDF to image':'<rect x="3" y="4" width="18" height="16"/><circle cx="9" cy="10" r="1.6"/><path d="M3 18l6-5 4 3 3-2 5 4"/>',
+  'PDF to Word':'<path d="M4 6l3.5 12L12 8l4.5 10L20 6"/>',
+  'PDF to Excel':'<rect x="3" y="4" width="18" height="16"/><path d="M3 10h18M3 15h18M9 4v16"/>',
+  'PDF to PowerPoint':'<rect x="3" y="4" width="18" height="12"/><path d="M12 16v4m-4 0h8"/>',
+  'PDF to text':'<path d="M4 6h16M4 11h16M4 16h10"/>',
+  'PDF to Markdown':'<rect x="2" y="6" width="20" height="12"/><path d="M6 15v-6l3 3 3-3v6M17 9v6m-2.5-2.5L17 15l2.5-2.5"/>',
+  'Images to PDF':'<rect x="3" y="3" width="13" height="13"/><path d="M8 21h13V8"/><path d="M3 13l4-3 4 3"/>',
+  'Web page to PDF':'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  'Protect PDF':'<rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  'Unlock PDF':'<rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
+  'Watermark':'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  'Page numbers':'<path d="M9 4L7 20M17 4l-2 16M4 9h16M3 15h16"/>',
+  'Sign PDF':'<path d="M4 20h16"/><path d="M5 16c3-8 5-9 6-6s2 3 8-1"/>',
+  'Replace text':'<path d="M4 8h13l-3-3m3 3l-3 3"/><path d="M20 16H7l3-3m-3 3l3 3"/>',
+  'Add text':'<path d="M5 5h14M12 5v15M9 20h6"/>',
+  'Add shape':'<rect x="3" y="11" width="10" height="10"/><circle cx="15" cy="9" r="6"/>',
+  'Add image':'<rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/>',
+  'Highlight & mark up':'<path d="M4 20h8"/><path d="M14 4l6 6-8 8H6v-6z"/>',
+  'Add sticky note':'<path d="M4 4h16v11l-5 5H4z"/><path d="M15 20v-5h5"/>',
+  'Inspect form fields':'<rect x="3" y="5" width="18" height="5"/><rect x="3" y="14" width="18" height="5"/>',
+  'Fill form':'<rect x="3" y="4" width="18" height="6"/><path d="M6 16l3 3 6-7"/>',
+  'Add form field':'<rect x="3" y="7" width="14" height="10"/><path d="M20 4v6M17 7h6"/>',
+  'Redact text':'<rect x="3" y="9" width="18" height="6" fill="currentColor"/><path d="M3 4h12M3 20h8"/>',
+  'Flatten PDF':'<path d="M3 8l9-4 9 4-9 4z"/><path d="M3 13l9 4 9-4M3 17l9 4 9-4"/>'
+};
+// one plain line per tool for the tiles; the full text stays inside the tool
+const TILE = {
+  'Merge PDF':'Combine several PDFs into one', 'Split PDF':'Break a PDF into separate files',
+  'Extract pages':'Save a range of pages as a new PDF', 'Remove pages':'Delete the pages you do not need',
+  'Organise pages':'Drag pages to reorder or delete', 'Rotate PDF':'Turn pages sideways or upside down',
+  'Compress PDF':'Make the file size smaller', 'Repair PDF':'Fix a broken or damaged file',
+  'PDF to image':'Save each page as JPG or PNG', 'PDF to Word':'Get an editable .docx file',
+  'PDF to Excel':'Pull tables into a spreadsheet', 'PDF to PowerPoint':'Turn pages into slides',
+  'PDF to text':'Copy out all the plain text', 'PDF to Markdown':'Keep headings, lists and tables',
+  'Images to PDF':'Turn photos or scans into one PDF', 'Web page to PDF':'Save a link or HTML as a PDF',
+  'Protect PDF':'Lock the file with a password', 'Unlock PDF':'Remove a password you know',
+  'Watermark':'Stamp text or a logo on every page', 'Page numbers':'Add numbers to every page',
+  'Sign PDF':'Place your signature on a page', 'Replace text':'Find a word and swap it',
+  'Add text':'Type anywhere on a page', 'Add shape':'Draw boxes, circles and arrows',
+  'Add image':'Place a logo or photo on a page', 'Highlight & mark up':'Highlight, underline or strike words',
+  'Add sticky note':'Leave a comment on a page', 'Inspect form fields':'List the fillable fields in a form',
+  'Fill form':'Fill in a form\u2019s fields', 'Add form field':'Add a text box or checkbox',
+  'Redact text':'Permanently black out sensitive text', 'Flatten PDF':'Lock in form entries and notes'
+};
+
+function buildTile(tool, i) {
+  const tile = el('button', {type: 'button', class: 'tile', style: `--accent:var(--${tool.accent}); --wash:var(--${tool.accent}-wash);`});
+  tile.innerHTML = `
+    <span class="b c1"></span><span class="b c2"></span><span class="b c3"></span><span class="b c4"></span>
+    <span class="tile-ico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[tool.title] || ICONS['Add text']}</svg></span>
+    <span class="tile-title">${tool.title}</span>
+    <span class="tile-desc">${TILE[tool.title] || tool.desc}</span>`;
+  tile.addEventListener('click', () => openWorkspace(i, tile));
+  return tile;
+}
+
+/* The tool's card lives on a hidden shelf and moves into the workspace
+   when its tile is clicked, so every form keeps its state between opens. */
+const ws = document.getElementById('ws');
+const wsPanel = document.getElementById('wsPanel');
+const wsBody = document.getElementById('wsBody');
+const shelf = document.getElementById('shelf');
+let wsCard = null;
+let wsOpener = null;
+
+function closeWorkspace(skipFocus) {
+  if (!ws.classList.contains('show')) return;
+  if (wsCard) shelf.appendChild(wsCard);
+  ws.classList.remove('show');
+  document.body.style.overflow = '';
+  if (wsOpener && !skipFocus) wsOpener.focus({preventScroll: true});
+  wsCard = null;
+  wsOpener = null;
+}
+
+function openWorkspace(i, opener) {
+  const card = cardEls[i];
+  if (!card) return;
+  closeWorkspace(true);
+  wsCard = card;
+  wsOpener = opener || null;
+  wsBody.appendChild(card);
+  wsPanel.classList.toggle('wide', !!TOOLS[i].wide);
+  ws.classList.add('show');
+  ws.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  wsPanel.focus({preventScroll: true});
+}
+
+document.getElementById('wsClose').addEventListener('click', () => closeWorkspace());
+document.getElementById('wsBackdrop').addEventListener('click', () => closeWorkspace());
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeWorkspace(); });
+
+const NAV = document.querySelector('.groupbar-outer');
+
+// keep the sticky tab bar exactly under the header, whatever its height
+const HEADER = document.querySelector('header');
+const syncHead = () => document.documentElement.style.setProperty('--head-h', HEADER.offsetHeight + 'px');
+syncHead();
+window.addEventListener('resize', syncHead);
+if (document.fonts) document.fonts.ready.then(syncHead);
+const sections = {};
+const tabs = {};
+let activeGroup = 'All';
+
+GROUPS.forEach(([name, blurb]) => {
   const section = el('section', {id: 'group-' + name});
   const tools = TOOLS.filter(t => t.group === name);
   section.appendChild(el('div', {class: 'ops-head'},
     `<div><h2>${name}</h2><p>${blurb}</p></div><span class="count">${String(tools.length).padStart(2, '0')} tools</span>`));
-  const grid = el('div', {class: 'ops-grid'});
-  tools.forEach(tool => grid.appendChild(buildCard(tool, TOOLS.indexOf(tool))));
+  const grid = el('div', {class: 'tile-grid'});
+  tools.forEach(tool => {
+    const i = TOOLS.indexOf(tool);
+    shelf.appendChild(buildCard(tool, i));
+    grid.appendChild(buildTile(tool, i));
+  });
   section.appendChild(grid);
   groupsEl.appendChild(section);
-
-  const tab = el('button', {type: 'button', role: 'tab', 'aria-selected': gi === 0 ? 'true' : 'false'},
-    `${name}<b>${tools.length}</b>`);
-  tab.addEventListener('click', () => {
-    [...barEl.children].forEach(b => b.setAttribute('aria-selected', 'false'));
-    tab.setAttribute('aria-selected', 'true');
-    section.scrollIntoView({behavior: 'smooth', block: 'start'});
-  });
-  barEl.appendChild(tab);
+  sections[name] = section;
 });
 
-// highlight the group you are actually looking at
-const spy = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (!entry.isIntersecting) return;
-    const index = [...groupsEl.children].indexOf(entry.target);
-    [...barEl.children].forEach((b, i) => b.setAttribute('aria-selected', i === index ? 'true' : 'false'));
+function showGroup(name, scroll) {
+  activeGroup = name;
+  Object.entries(sections).forEach(([g, section]) => {
+    section.style.display = (name === 'All' || name === g) ? '' : 'none';
   });
-}, {rootMargin: '-25% 0px -65% 0px'});
-[...groupsEl.children].forEach(section => spy.observe(section));
-
-/* ------------------------------------------------------------------ *
- * Search                                                               *
- * ------------------------------------------------------------------ */
-const searchInput = document.getElementById('toolSearch');
-const noResultsEl = document.getElementById('noResults');
-
-function filterTools(raw) {
-  const q = raw.trim().toLowerCase();
-  let firstVisible = null;
-  let anyVisible = false;
-
-  document.querySelectorAll('.op').forEach(card => {
-    const match = !q || card.dataset.search.includes(q);
-    card.style.display = match ? '' : 'none';
-    if (match) { anyVisible = true; if (!firstVisible) firstVisible = card; }
-  });
-
-  [...groupsEl.children].forEach(section => {
-    const hasVisible = [...section.querySelectorAll('.op')].some(c => c.style.display !== 'none');
-    section.style.display = (q && !hasVisible) ? 'none' : '';
-  });
-
-  if (q && !anyVisible) {
-    noResultsEl.innerHTML = `No tools match “<b>${raw.trim().replace(/</g, '&lt;')}</b>”. Try a different word, or clear the search to see everything.`;
-    noResultsEl.style.display = 'block';
-  } else {
-    noResultsEl.style.display = 'none';
-  }
-  return firstVisible;
+  Object.entries(tabs).forEach(([g, tab]) => tab.setAttribute('aria-selected', g === name ? 'true' : 'false'));
+  // if the tab bar is stuck to the top, jump back to the start of the tools
+  if (scroll && NAV.getBoundingClientRect().top < 200) groupsEl.scrollIntoView({block: 'start'});
 }
 
-searchInput.addEventListener('input', () => filterTools(searchInput.value));
-searchInput.addEventListener('keydown', e => {
-  if (e.key !== 'Enter') return;
-  const first = filterTools(searchInput.value);
-  if (first) {
-    first.scrollIntoView({behavior: 'smooth', block: 'center'});
-    first.classList.remove('search-hit');
-    void first.offsetWidth;
-    first.classList.add('search-hit');
-  }
+['All', ...GROUPS.map(g => g[0])].forEach(name => {
+  const count = name === 'All' ? TOOLS.length : TOOLS.filter(t => t.group === name).length;
+  const tab = el('button', {type: 'button', role: 'tab', 'aria-selected': name === 'All' ? 'true' : 'false'},
+    `${name}<b>${count}</b>`);
+  tab.addEventListener('click', () => showGroup(name, true));
+  barEl.appendChild(tab);
+  tabs[name] = tab;
 });
 
+document.getElementById('eyebrow').textContent = TOOLS.length + ' tools, one file at a time';
+
 /* ------------------------------------------------------------------ *
- * Hero command prompt — type what you want, pick a suggestion         *
+ * Finding a tool: plain-language search, quick-start chips, shortcuts *
  * ------------------------------------------------------------------ */
-const heroInput = document.getElementById('heroSearch');
-const heroSuggestEl = document.getElementById('heroSuggest');
-let heroMatches = [];
-let heroActive = -1;
+// everyday words people type, mapped to the tool that does it
+const KW = {
+  'Merge PDF':'combine join together append unite one file',
+  'Split PDF':'separate divide cut break apart pages zip',
+  'Extract pages':'pull select take pages range part',
+  'Remove pages':'delete drop discard trim pages',
+  'Organise pages':'organize reorder rearrange move sort pages thumbnails',
+  'Rotate PDF':'turn flip sideways upside down landscape portrait',
+  'Compress PDF':'smaller shrink reduce size optimize email too big',
+  'Repair PDF':'fix broken corrupt damaged recover',
+  'PDF to image':'jpg jpeg png picture photo screenshot',
+  'PDF to Word':'docx doc editable microsoft',
+  'PDF to Excel':'xlsx spreadsheet table sheet',
+  'PDF to PowerPoint':'pptx slides presentation deck',
+  'PDF to text':'txt plain extract copy',
+  'PDF to Markdown':'md headings',
+  'Images to PDF':'jpg png photo scan picture combine make pdf from images',
+  'Web page to PDF':'website url html link save page',
+  'Protect PDF':'password encrypt lock secure restrict',
+  'Unlock PDF':'remove password decrypt open restrictions',
+  'Watermark':'stamp confidential draft logo overlay text',
+  'Page numbers':'number pagination footer header',
+  'Sign PDF':'signature sign autograph',
+  'Replace text':'find change edit swap word',
+  'Add text':'write type annotate typewriter',
+  'Add shape':'rectangle circle line arrow box draw',
+  'Add image':'logo picture photo stamp insert',
+  'Highlight & mark up':'highlight underline strikeout annotate marker',
+  'Add sticky note':'comment note annotation',
+  'Inspect form fields':'list fields fillable form check',
+  'Fill form':'fill in complete form json',
+  'Add form field':'create fillable textbox checkbox radio',
+  'Redact text':'black out hide censor remove sensitive private',
+  'Flatten PDF':'lock form annotations bake print'
+};
+const POPULAR = ['Merge PDF', 'Compress PDF', 'Split PDF', 'PDF to Word', 'Protect PDF', 'Rotate PDF', 'Unlock PDF', 'Images to PDF', 'PDF to image'];
+const FILLER = new Set(['make','to','a','an','the','my','i','want','need','it','into','of','how','do','can','you','me','this','that','file','files','some']);
+const toolIndex = title => TOOLS.findIndex(t => t.title === title);
+
+const HAY = TOOLS.map(t => [t.title, t.desc, t.tag, t.group, KW[t.title] || ''].join(' ').toLowerCase());
+cardEls.forEach((card, i) => { if (card) card.dataset.search = HAY[i]; });
 
 function matchTools(raw) {
   const q = raw.trim().toLowerCase();
-  if (!q) return [];
-  return TOOLS
-    .map((tool, i) => ({tool, i}))
-    .filter(({tool}) => (tool.title + ' ' + tool.desc + ' ' + tool.tag + ' ' + tool.group).toLowerCase().includes(q))
-    .sort((a, b) => a.tool.title.toLowerCase().indexOf(q) - b.tool.title.toLowerCase().indexOf(q))
-    .slice(0, 7);
+  let words = q.split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  // ignore filler like "make", "to", "my" so natural phrases still match
+  const rest = words.filter(w => !FILLER.has(w));
+  if (rest.length) words = rest;
+  const out = [];
+  TOOLS.forEach((tool, i) => {
+    if (!words.every(w => HAY[i].includes(w))) return;
+    const title = tool.title.toLowerCase();
+    const kw = (KW[tool.title] || '').toLowerCase();
+    // words in the title rank first, then everyday words, then the description
+    const score = words.reduce((sum, w) => sum + (title.includes(w) ? 0 : kw.includes(w) ? 1 : 2), 0) - (title.includes(q) ? 1 : 0);
+    out.push({tool, i, score});
+  });
+  return out.sort((a, b) => a.score - b.score).slice(0, 7);
 }
 
-function renderHeroSuggest() {
-  if (!heroMatches.length) {
-    heroSuggestEl.innerHTML = heroInput.value.trim()
-      ? `<div class="sug-empty">No tool matches that — try a different word, or scroll the groups below.</div>`
-      : '';
-    heroSuggestEl.classList.toggle('show', !!heroInput.value.trim());
-    return;
+function popularMatches() {
+  return POPULAR.map(title => ({tool: TOOLS[toolIndex(title)], i: toolIndex(title)})).filter(m => m.tool).slice(0, 7);
+}
+
+function openTool(i) {
+  openWorkspace(i, null);
+}
+
+// one suggestion dropdown, used by both the hero search and the tab-bar search
+function makeSuggest(input, box, scope) {
+  let matches = [];
+  let active = -1;
+
+  function paint() {
+    const hasText = !!input.value.trim();
+    if (!matches.length) {
+      box.innerHTML = hasText
+        ? `<div class="sug-empty">No tool matches that. Try words like merge, compress, Word, password or rotate.</div>`
+        : '';
+      box.classList.toggle('show', hasText);
+    } else {
+      box.innerHTML = (hasText ? '' : `<div class="sug-head">Popular tools</div>`) + matches.map(({tool}, idx) => `
+        <button type="button" class="sug${idx === active ? ' active' : ''}" data-idx="${idx}"
+                style="--accent:var(--${tool.accent}); --wash:var(--${tool.accent}-wash);" role="option">
+          <span class="sug-tag">${tool.tag}</span>
+          <span class="sug-title">${tool.title}</span>
+          <span class="sug-desc">${tool.desc}</span>
+        </button>`).join('');
+      box.classList.add('show');
+    }
+    scope.classList.toggle('open', box.classList.contains('show'));
+    const current = box.querySelector('.active');
+    if (current) current.scrollIntoView({block: 'nearest'});
   }
-  heroSuggestEl.innerHTML = heroMatches.map(({tool}, idx) => `
-    <button type="button" class="sug${idx === heroActive ? ' active' : ''}" data-idx="${idx}"
-            style="--accent:var(--${tool.accent}); --wash:var(--${tool.accent}-wash);" role="option">
-      <span class="sug-tag">${tool.tag}</span>
-      <span class="sug-title">${tool.title}</span>
-      <span class="sug-desc">${tool.desc}</span>
-    </button>`).join('');
-  heroSuggestEl.classList.add('show');
+
+  function close() {
+    box.classList.remove('show');
+    scope.classList.remove('open');
+    input.setAttribute('aria-expanded', 'false');
+    active = -1;
+  }
+
+  function pick(idx) {
+    const picked = matches[idx];
+    if (!picked) return;
+    input.value = '';
+    close();
+    openTool(picked.i);
+  }
+
+  function update() {
+    matches = input.value.trim() ? matchTools(input.value) : popularMatches();
+    active = -1;
+    input.setAttribute('aria-expanded', matches.length ? 'true' : 'false');
+    paint();
+  }
+
+  input.addEventListener('input', update);
+  input.addEventListener('focus', update);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { close(); return; }
+    if (!matches.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, matches.length - 1); paint(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active - 1, 0); paint(); }
+    else if (e.key === 'Enter') { e.preventDefault(); pick(active >= 0 ? active : 0); }
+  });
+  box.addEventListener('mousedown', e => {
+    const btn = e.target.closest('.sug');
+    if (btn) { e.preventDefault(); pick(+btn.dataset.idx); }
+  });
+  document.addEventListener('click', e => { if (!scope.contains(e.target)) close(); });
 }
 
-function closeHeroSuggest() {
-  heroSuggestEl.classList.remove('show');
-  heroInput.setAttribute('aria-expanded', 'false');
-  heroActive = -1;
+const heroInput = document.getElementById('heroSearch');
+const searchInput = document.getElementById('toolSearch');
+makeSuggest(heroInput, document.getElementById('heroSuggest'), document.querySelector('.hero-prompt'));
+makeSuggest(searchInput, document.getElementById('navSuggest'), document.querySelector('.search-wrap'));
+
+// "/" or Ctrl/Cmd+K jumps to whichever search is on screen
+document.addEventListener('keydown', e => {
+  if (ws.classList.contains('show')) return;
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
+    e.preventDefault();
+    const heroVisible = document.querySelector('.hero').getBoundingClientRect().bottom > 120;
+    (heroVisible ? heroInput : searchInput).focus();
+  }
+});
+
+// quick-start chips: recently used tools first, then the popular ones
+const quickEl = document.getElementById('quick');
+const RECENT_KEY = 'pdfred_recent';
+
+function getRecent() {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch (e) { return []; }
 }
 
-function pickTool(matchIndex) {
-  const picked = heroMatches[matchIndex];
-  if (!picked) return;
-  searchInput.value = '';
-  filterTools('');
-  const card = cardEls[picked.i];
-  closeHeroSuggest();
-  if (!card) return;
-  card.scrollIntoView({behavior: 'smooth', block: 'center'});
-  card.classList.remove('search-hit');
-  void card.offsetWidth;
-  card.classList.add('search-hit');
-  const focusTarget = card.querySelector('input, textarea, select');
-  if (focusTarget) setTimeout(() => focusTarget.focus({preventScroll: true}), 350);
+function rememberTool(title) {
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify([title, ...getRecent().filter(t => t !== title)].slice(0, 4))); } catch (e) {}
+  renderQuick();
 }
 
-heroInput.addEventListener('input', () => {
-  heroMatches = matchTools(heroInput.value);
-  heroActive = -1;
-  heroInput.setAttribute('aria-expanded', heroMatches.length ? 'true' : 'false');
-  renderHeroSuggest();
-});
-
-heroInput.addEventListener('keydown', e => {
-  if (!heroMatches.length) return;
-  if (e.key === 'ArrowDown') { e.preventDefault(); heroActive = Math.min(heroActive + 1, heroMatches.length - 1); renderHeroSuggest(); }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); heroActive = Math.max(heroActive - 1, 0); renderHeroSuggest(); }
-  else if (e.key === 'Enter') { e.preventDefault(); pickTool(heroActive >= 0 ? heroActive : 0); }
-  else if (e.key === 'Escape') { closeHeroSuggest(); }
-});
-
-heroSuggestEl.addEventListener('mousedown', e => {
-  const btn = e.target.closest('.sug');
-  if (btn) pickTool(+btn.dataset.idx);
-});
-
-document.addEventListener('click', e => {
-  if (!e.target.closest('.hero-prompt')) closeHeroSuggest();
-});
+function renderQuick() {
+  const recent = getRecent().filter(t => toolIndex(t) >= 0);
+  const titles = [...recent, ...POPULAR.filter(t => !recent.includes(t))].slice(0, 8);
+  quickEl.innerHTML = `<span class="quick-label">${recent.length ? 'Recent and popular' : 'Popular'}</span>`;
+  titles.forEach(title => {
+    const i = toolIndex(title);
+    const tool = TOOLS[i];
+    const chip = el('button', {type: 'button', class: 'chip', style: `--accent:var(--${tool.accent}); --wash:var(--${tool.accent}-wash);`});
+    chip.textContent = title;
+    chip.addEventListener('click', () => openTool(i));
+    quickEl.appendChild(chip);
+  });
+}
+renderQuick();
 
 /* ------------------------------------------------------------------ *
  * Behaviour                                                           *
@@ -1336,6 +2063,7 @@ async function run(card, tool, uid, state, status, result, runBtn) {
       result.textContent = tool.resultKey ? data[tool.resultKey] : JSON.stringify(data, null, 2);
       result.style.display = 'block';
       setStatus(status, `Done in ${elapsed}.`, 'ok');
+      rememberTool(tool.title);
       return;
     }
 
@@ -1358,6 +2086,7 @@ async function run(card, tool, uid, state, status, result, runBtn) {
     const unknown = res.headers.get('X-Fields-Unknown');
     if (unknown) message += ` · not found: ${unknown}`;
     setStatus(status, message, 'ok');
+    rememberTool(tool.title);
   } catch (err) {
     setStatus(status, 'Could not reach the server.', 'err');
   } finally {
